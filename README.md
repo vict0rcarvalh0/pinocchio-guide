@@ -635,42 +635,448 @@ pub fn process_withdraw_nonce_account<'a>(
 These instructions manage SPL token accounts and operations, which follow Solana's token standard.
 
 - Approve: Authorizes a spender to spend a specific amount of tokens.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::Approve;
+
+/// Processes the Approve instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `amount`: The amount of tokens to approve.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The token account.
+///   1. `[]` The delegate account.
+///   2. `[SIGNER]` The source account owner.
+pub fn process_approve<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,         // Amount of tokens to approve.
+    signers: &[Signer],  // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let source_account = next_account_info(account_info_iter)?; // The token account.
+    let delegate_account = next_account_info(account_info_iter)?; // The delegate account.
+    let authority_account = next_account_info(account_info_iter)?; // The source account owner.
+
+    // Ensure that the 'source' account is writable
+    if !source_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'authority' account is a signer
+    if !authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let approve_instruction = Approve {
+        source: source_account,
+        delegate: delegate_account,
+        authority: authority_account,
+        amount,
+    };
+
+    // Invoking the instruction
+    approve_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+
+```
 
 - ApproveChecked: A safer version of Approve, which verifies the number of decimals before granting authorization.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::ApproveChecked;
+
+/// Processes the ApproveChecked instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `amount`: The amount of tokens to approve.
+/// - `decimals`: The number of decimals for the token.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The source account.
+///   1. `[]` The token mint.
+///   2. `[]` The delegate account.
+///   3. `[SIGNER]` The source account owner.
+pub fn process_approve_checked<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,         // Amount of tokens to approve.
+    decimals: u8,        // Token decimals for validation.
+    signers: &[Signer],  // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let source_account = next_account_info(account_info_iter)?; // The source account.
+    let mint_account = next_account_info(account_info_iter)?;   // The token mint account.
+    let delegate_account = next_account_info(account_info_iter)?; // The delegate account.
+    let authority_account = next_account_info(account_info_iter)?; // The source account owner.
+
+    // Ensure that the 'source' account is writable
+    if !source_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'authority' account is a signer
+    if !authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let approve_checked_instruction = ApproveChecked {
+        source: source_account,
+        mint: mint_account,
+        delegate: delegate_account,
+        authority: authority_account,
+        amount,
+        decimals,
+    };
+
+    // Invoking the instruction
+    approve_checked_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - Burn: Removes a specified amount of tokens from circulation, reducing the total supply.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::Burn;
+
+/// Processes the Burn instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `amount`: The amount of tokens to burn.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The account to burn from.
+///   1. `[WRITE]` The token mint.
+///   2. `[SIGNER]` The account's owner/delegate.
+pub fn process_burn<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,         // Amount of tokens to burn.
+    signers: &[Signer],  // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let burn_account = next_account_info(account_info_iter)?;     // The account to burn from.
+    let mint_account = next_account_info(account_info_iter)?;     // The token mint account.
+    let authority_account = next_account_info(account_info_iter)?; // The account owner or delegate.
+
+    // Ensure that the 'burn' account is writable
+    if !burn_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'mint' account is writable
+    if !mint_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'authority' account is a signer
+    if !authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let burn_instruction = Burn {
+        account: burn_account,
+        mint: mint_account,
+        authority: authority_account,
+        amount,
+    };
+
+    // Invoking the instruction
+    burn_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - BurnChecked: A variant of Burn that includes decimal verification before burning tokens.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::BurnChecked;
+
+/// Processes the BurnChecked instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `amount`: The amount of tokens to burn.
+/// - `decimals`: The decimals for the token being burned.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The account to burn from.
+///   1. `[WRITE]` The token mint.
+///   2. `[SIGNER]` The account's owner/delegate.
+pub fn process_burn_checked<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,         // Amount of tokens to burn.
+    decimals: u8,        // Number of decimals for the token.
+    signers: &[Signer],  // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let burn_account = next_account_info(account_info_iter)?;     // The account to burn from.
+    let mint_account = next_account_info(account_info_iter)?;     // The token mint account.
+    let authority_account = next_account_info(account_info_iter)?; // The account owner or delegate.
+
+    // Ensure that the 'burn' account is writable
+    if !burn_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'mint' account is writable
+    if !mint_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'authority' account is a signer
+    if !authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let burn_checked_instruction = BurnChecked {
+        account: burn_account,
+        mint: mint_account,
+        authority: authority_account,
+        amount,
+        decimals,
+    };
+
+    // Invoking the instruction
+    burn_checked_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - CloseAccount: Closes a token account, transferring any remaining lamports to the account owner.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::CloseAccount;
+
+/// Processes the CloseAccount instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The account to close.
+///   1. `[WRITE]` The destination account.
+///   2. `[SIGNER]` The account's owner.
+pub fn process_close_account<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    signers: &[Signer], // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let close_account = next_account_info(account_info_iter)?;      // The account to close.
+    let destination_account = next_account_info(account_info_iter)?; // The destination account.
+    let authority_account = next_account_info(account_info_iter)?;  // The owner of the account to close.
+
+    // Ensure that the 'close' account is writable
+    if !close_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'destination' account is writable
+    if !destination_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'authority' account is a signer
+    if !authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let close_account_instruction = CloseAccount {
+        account: close_account,
+        destination: destination_account,
+        authority: authority_account,
+    };
+
+    // Invoking the instruction
+    close_account_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - FreezeAccount: Freezes a token account, preventing any transfers until it is thawed.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::FreezeAccount;
+
+/// Processes the FreezeAccount instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The account to freeze.
+///   1. `[]` The token mint.
+///   2. `[SIGNER]` The mint freeze authority.
+pub fn process_freeze_account<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    signers: &[Signer], // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let account_to_freeze = next_account_info(account_info_iter)?; // The account to freeze.
+    let mint_account = next_account_info(account_info_iter)?;      // The token mint account.
+    let freeze_authority = next_account_info(account_info_iter)?;  // The mint freeze authority account.
+
+    // Ensure that the account to freeze is writable
+    if !account_to_freeze.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the freeze authority is a signer
+    if !freeze_authority.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let freeze_account_instruction = FreezeAccount {
+        account: account_to_freeze,
+        mint: mint_account,
+        freeze_authority,
+    };
+
+    // Invoking the instruction
+    freeze_account_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - InitializeAccount: Initializes a token account associated with a specific wallet.
+```rust
+
+```
 
 - InitializeAccount2: Similar to InitializeAccount, but directly links the account to a public key.
+```rust
+
+```
 
 - InitializeAccount3: An additional variant that simplifies the account initialization process further.
+```rust
+
+```
 
 - InitializeMint: Sets up a new Mint account for creating a new type of token.
+```rust
+
+```
 
 - InitializeMint2: An alternative version of InitializeMint with compatibility tweaks.
+```rust
+
+```
 
 - MintTo: Mints new tokens and assigns them to a specific account.
+```rust
+
+```
 
 - MintToChecked: A safer version of MintTo that verifies decimals before minting tokens.
+```rust
+
+```
 
 - Revoke: Revokes permissions previously granted via Approve.
+```rust
+
+```
 
 - SetAuthority: Transfers authority over a token or an account to another address.
+```rust
+
+```
 
 - SyncNative: Synchronizes the lamports balance of a wrapped SOL account with its stored value.
+```rust
+
+```
 
 - ThawAccount: Unfreezes a previously frozen account.
+```rust
+
+```
 
 - Transfer: Transfers tokens from one account to another.
+```rust
+
+```
 
 - TransferChecked: A variant of Transfer that performs additional decimal verification.
+```rust
+
+```
 
 Token States
 
