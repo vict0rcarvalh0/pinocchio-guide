@@ -425,366 +425,252 @@ pub fn process_initialize_nonce_account<'a>(
 ```
 
 - Transfer: Transfers lamports from one account to another.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::Transfer;
+
+pub fn process_transfer<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    lamports: u64,        // The amount of lamports to transfer.
+    signers: &[Signer],   // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let from_account = next_account_info(account_info_iter)?; // The funding account from which lamports will be transferred.
+    let to_account = next_account_info(account_info_iter)?;   // The recipient account that will receive the lamports.
+
+    // Ensure that the 'from' account is writable and a signer
+    if !from_account.is_writable || !from_account.is_signer {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'to' account is writable
+    if !to_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Creating the instruction instance
+    let transfer_instruction = Transfer {
+        from: from_account,
+        to: to_account,
+        lamports,
+    };
+
+    // Invoking the instruction
+    transfer_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - TransferWithSeed: Transfers lamports using a seed-derived account.
 
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::TransferWithSeed;
+
+pub fn process_transfer_with_seed<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    lamports: u64,        //  The amount of lamports to transfer.
+    seed: &'a str,        // The seed used to derive the address of the funding account.
+    owner: &'a Pubkey,    // The address of the program that will own the new account.
+    signers: &[Signer],   // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let from_account = next_account_info(account_info_iter)?; // The funding account from which lamports will be transferred.
+    let base_account = next_account_info(account_info_iter)?; // The base account used to derive the funding account's address. This must be a signer.
+    let to_account = next_account_info(account_info_iter)?;   // The recipient account that will receive the lamports.
+
+    // Ensure that the 'from' account is writable
+    if !from_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure that the 'base' account is a signer
+    if !base_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Ensure that the 'to' account is writable
+    if !to_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Creating the instruction instance
+    let transfer_instruction = TransferWithSeed {
+        from: from_account,
+        base: base_account,
+        to: to_account,
+        lamports,
+        seed,
+        owner,
+    };
+
+    // Invoking the instruction
+    transfer_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+
+```
+
 - UpdateNonceAccount: Updates metadata associated with a Nonce account.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::UpdateNonceAccount;
+
+pub fn process_update_nonce_account<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    signers: &[Signer],  // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // The nonce account passed to the instruction
+    let nonce_account = next_account_info(account_info_iter)?; // The account that needs to be upgraded
+
+    // Ensure that the 'nonce_account' is writable
+    if !nonce_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Creating the instruction instance
+    let update_nonce_instruction = UpdateNonceAccount {
+        account: nonce_account,
+    };
+
+    // Invoking the instruction
+    update_nonce_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 - WithdrawNonceAccount: Allows withdrawing lamports from a Nonce account to a destination account.
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::WithdrawNonceAccount;
+
+pub fn process_withdraw_nonce_account<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    signers: &[Signer],          // The signers array required to authorize the transaction.
+    lamports_to_withdraw: u64,   // The amount of lamports to withdraw.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Nonce account
+    let nonce_account = next_account_info(account_info_iter)?;               // The account from which lamports will be withdrawn.
+
+    // Recipient account
+    let recipient_account = next_account_info(account_info_iter)?;           // The account where the withdrawn lamports will be sent.
+
+    // RecentBlockhashes sysvar
+    let recent_blockhashes_sysvar = next_account_info(account_info_iter)?;   // A sysvar account providing recent blockhashes.
+
+    // Rent sysvar
+    let rent_sysvar = next_account_info(account_info_iter)?;                 // A sysvar account providing rent information.
+
+    // Nonce authority
+    let nonce_authority = next_account_info(account_info_iter)?;             // The account that is authorized to execute the withdrawal.
+
+    // Ensure the necessary accounts are writable or readonly as required
+    if !nonce_account.is_writable || !recipient_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the nonce authority is a signer
+    if !nonce_authority.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let withdraw_nonce_instruction = WithdrawNonceAccount {
+        account: nonce_account,
+        recipient: recipient_account,
+        recent_blockhashes_sysvar,
+        rent_sysvar,
+        authority: nonce_authority,
+        lamports: lamports_to_withdraw,
+    };
+
+    // Invoking the instruction
+    withdraw_nonce_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
 
 ## Token Instructions
 
 These instructions manage SPL token accounts and operations, which follow Solana's token standard.
 
 - Approve: Authorizes a spender to spend a specific amount of tokens.
-/// Approves a delegate.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The token account.
-///   1. `[]` The delegate.
-///   2. `[SIGNER]` The source account owner.
-pub struct Approve<'a> {
-    /// Source Account.
-    pub source: &'a AccountInfo,
-    /// Delegate Account
-    pub delegate: &'a AccountInfo,
-    /// Source Owner Account
-    pub authority: &'a AccountInfo,
-    /// Amount
-    pub amount: u64,
-}
 
 - ApproveChecked: A safer version of Approve, which verifies the number of decimals before granting authorization.
-/// Approves a delegate.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The source account.
-///   1. `[]` The token mint.
-///   2. `[]` The delegate.
-///   3. `[SIGNER]` The source account owner.
-pub struct ApproveChecked<'a> {
-    /// Source Account.
-    pub source: &'a AccountInfo,
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Delegate Account.
-    pub delegate: &'a AccountInfo,
-    /// Source Owner Account.
-    pub authority: &'a AccountInfo,
-    /// Amount.
-    pub amount: u64,
-    /// Decimals.
-    pub decimals: u8,
-}
 
 - Burn: Removes a specified amount of tokens from circulation, reducing the total supply.
-/// Burns tokens by removing them from an account.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The account to burn from.
-///   1. `[WRITE]` The token mint.
-///   2. `[SIGNER]` The account's owner/delegate.
-pub struct Burn<'a> {
-    /// Source of the Burn Account
-    pub account: &'a AccountInfo,
-    /// Mint Account
-    pub mint: &'a AccountInfo,
-    /// Owner of the Token Account
-    pub authority: &'a AccountInfo,
-    /// Amount
-    pub amount: u64,
-}
 
 - BurnChecked: A variant of Burn that includes decimal verification before burning tokens.
-/// Burns tokens by removing them from an account.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The account to burn from.
-///   1. `[WRITE]` The token mint.
-///   2. `[SIGNER]` The account's owner/delegate.
-pub struct BurnChecked<'a> {
-    /// Source of the Burn Account
-    pub account: &'a AccountInfo,
-    /// Mint Account
-    pub mint: &'a AccountInfo,
-    /// Owner of the Token Account
-    pub authority: &'a AccountInfo,
-    /// Amount
-    pub amount: u64,
-    /// Decimals
-    pub decimals: u8,
-}
 
 - CloseAccount: Closes a token account, transferring any remaining lamports to the account owner.
-/// Close an account by transferring all its SOL to the destination account.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The account to close.
-///   1. `[WRITE]` The destination account.
-///   2. `[SIGNER]` The account's owner.
-pub struct CloseAccount<'a> {
-    /// Token Account.
-    pub account: &'a AccountInfo,
-    /// Destination Account
-    pub destination: &'a AccountInfo,
-    /// Owner Account
-    pub authority: &'a AccountInfo,
-}
 
 - FreezeAccount: Freezes a token account, preventing any transfers until it is thawed.
-/// Freeze an Initialized account using the Mint's freeze_authority
-///
-/// ### Accounts:
-///   0. `[WRITE]` The account to freeze.
-///   1. `[]` The token mint.
-///   2. `[SIGNER]` The mint freeze authority.
-pub struct FreezeAccount<'a> {
-    /// Token Account to freeze.
-    pub account: &'a AccountInfo,
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Mint Freeze Authority Account
-    pub freeze_authority: &'a AccountInfo,
-}
 
 - InitializeAccount: Initializes a token account associated with a specific wallet.
-/// Initialize a new Token Account.
-///
-/// ### Accounts:
-///   0. `[WRITE]`  The account to initialize.
-///   1. `[]` The mint this account will be associated with.
-///   2. `[]` The new account's owner/multisignature.
-///   3. `[]` Rent sysvar
-pub struct InitializeAccount<'a> {
-    /// New Account.
-    pub account: &'a AccountInfo,
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Owner of the new Account.
-    pub owner: &'a AccountInfo,
-    /// Rent Sysvar Account
-    pub rent_sysvar: &'a AccountInfo,
-}
 
 - InitializeAccount2: Similar to InitializeAccount, but directly links the account to a public key.
-/// Initialize a new Token Account.
-///
-/// ### Accounts:
-///   0. `[WRITE]`  The account to initialize.
-///   1. `[]` The mint this account will be associated with.
-///   3. `[]` Rent sysvar
-pub struct InitializeAccount2<'a> {
-    /// New Account.
-    pub account: &'a AccountInfo,
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Rent Sysvar Account
-    pub rent_sysvar: &'a AccountInfo,
-    /// Owner of the new Account.
-    pub owner: &'a Pubkey,
-}
 
 - InitializeAccount3: An additional variant that simplifies the account initialization process further.
-/// Initialize a new Token Account.
-///
-/// ### Accounts:
-///   0. `[WRITE]`  The account to initialize.
-///   1. `[]` The mint this account will be associated with.
-pub struct InitializeAccount3<'a> {
-    /// New Account.
-    pub account: &'a AccountInfo,
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Owner of the new Account.
-    pub owner: &'a Pubkey,
-}
 
 - InitializeMint: Sets up a new Mint account for creating a new type of token.
-/// Initialize a new mint.
-///
-/// ### Accounts:
-///   0. `[WRITABLE]` Mint account
-///   1. `[]` Rent sysvar
-pub struct InitializeMint<'a> {
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Rent sysvar Account.
-    pub rent_sysvar: &'a AccountInfo,
-    /// Decimals.
-    pub decimals: u8,
-    /// Mint Authority.
-    pub mint_authority: &'a Pubkey,
-    /// Freeze Authority.
-    pub freeze_authority: Option<&'a Pubkey>,
-}
 
 - InitializeMint2: An alternative version of InitializeMint with compatibility tweaks.
-/// Initialize a new mint.
-///
-/// ### Accounts:
-///   0. `[WRITABLE]` Mint account
-pub struct InitializeMint2<'a> {
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Decimals.
-    pub decimals: u8,
-    /// Mint Authority.
-    pub mint_authority: &'a Pubkey,
-    /// Freeze Authority.
-    pub freeze_authority: Option<&'a Pubkey>,
-}
 
 - MintTo: Mints new tokens and assigns them to a specific account.
-/// Mints new tokens to an account.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The mint.
-///   1. `[WRITE]` The account to mint tokens to.
-///   2. `[SIGNER]` The mint's minting authority.
-///
-pub struct MintTo<'a> {
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Token Account.
-    pub account: &'a AccountInfo,
-    /// Mint Authority
-    pub mint_authority: &'a AccountInfo,
-    /// Amount
-    pub amount: u64,
-}
 
 - MintToChecked: A safer version of MintTo that verifies decimals before minting tokens.
 
-/// Mints new tokens to an account.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The mint.
-///   1. `[WRITE]` The account to mint tokens to.
-///   2. `[SIGNER]` The mint's minting authority.
-///
-pub struct MintToChecked<'a> {
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Token Account.
-    pub account: &'a AccountInfo,
-    /// Mint Authority
-    pub mint_authority: &'a AccountInfo,
-    /// Amount
-    pub amount: u64,
-    /// Decimals
-    pub decimals: u8,
-}
-
 - Revoke: Revokes permissions previously granted via Approve.
-/// Revokes the delegate's authority.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The source account.
-///   1. `[SIGNER]` The source account owner.
-pub struct Revoke<'a> {
-    /// Source Account.
-    pub source: &'a AccountInfo,
-    ///  Source Owner Account.
-    pub authority: &'a AccountInfo,
-}
 
 - SetAuthority: Transfers authority over a token or an account to another address.
-#[repr(u8)]
-#[derive(Clone, Copy)]
-pub enum AuthorityType {
-    MintTokens = 0,
-    FreezeAccount = 1,
-    AccountOwner = 2,
-    CloseAccount = 3,
-}
-
-/// Sets a new authority of a mint or account.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The mint or account to change the authority of.
-///   1. `[SIGNER]` The current authority of the mint or account.
-pub struct SetAuthority<'a> {
-    /// Account (Mint or Token)
-    pub account: &'a AccountInfo,
-
-    /// Authority of the Account.
-    pub authority: &'a AccountInfo,
-
-    /// The type of authority to update.
-    pub authority_type: AuthorityType,
-
-    /// The new authority
-    pub new_authority: Option<&'a Pubkey>,
-}
 
 - SyncNative: Synchronizes the lamports balance of a wrapped SOL account with its stored value.
-/// Given a native token account updates its amount field based
-/// on the account's underlying `lamports`.
-///
-/// ### Accounts:
-///   0. `[WRITE]`  The native token account to sync with its underlying
-///      lamports.
-pub struct SyncNative<'a> {
-    /// Native Token Account
-    pub native_token: &'a AccountInfo,
-}
 
 - ThawAccount: Unfreezes a previously frozen account.
-/// Thaw a Frozen account using the Mint's freeze_authority
-///
-/// ### Accounts:
-///   0. `[WRITE]` The account to thaw.
-///   1. `[]` The token mint.
-///   2. `[SIGNER]` The mint freeze authority.
-pub struct ThawAccount<'a> {
-    /// Token Account to thaw.
-    pub account: &'a AccountInfo,
-    /// Mint Account.
-    pub mint: &'a AccountInfo,
-    /// Mint Freeze Authority Account
-    pub freeze_authority: &'a AccountInfo,
-}
 
 - Transfer: Transfers tokens from one account to another.
-/// Transfer Tokens from one Token Account to another.
-///
-/// ### Accounts:
-///   0. `[WRITE]` Sender account
-///   1. `[WRITE]` Recipient account
-///   2. `[SIGNER]` Authority account
-pub struct Transfer<'a> {
-    /// Sender account.
-    pub from: &'a AccountInfo,
-    /// Recipient account.
-    pub to: &'a AccountInfo,
-    /// Authority account.
-    pub authority: &'a AccountInfo,
-    /// Amount of microtokens to transfer.
-    pub amount: u64,
-}
 
 - TransferChecked: A variant of Transfer that performs additional decimal verification.
-/// Transfer Tokens from one Token Account to another.
-///
-/// ### Accounts:
-///   0. `[WRITE]` The source account.
-///   1. `[]` The token mint.
-///   2. `[WRITE]` The destination account.
-///   3. `[SIGNER]` The source account's owner/delegate.
-pub struct TransferChecked<'a> {
-    /// Sender account.
-    pub from: &'a AccountInfo,
-    /// Mint Account
-    pub mint: &'a AccountInfo,
-    /// Recipient account.
-    pub to: &'a AccountInfo,
-    /// Authority account.
-    pub authority: &'a AccountInfo,
-    /// Amount of microtokens to transfer.
-    pub amount: u64,
-    /// Decimal for the Token
-    pub decimals: u8,
-}
 
 Token States
 
