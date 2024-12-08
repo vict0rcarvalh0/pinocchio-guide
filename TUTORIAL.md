@@ -374,17 +374,19 @@ cargo add pinocchio
 ```
 
 ### Step 2: Adjust Cargo.toml
-Set the library type to cdylib to build correctly with cargo build dbf
+Set the crate type type to cdylib to ensure the output is compatible with Solana's SBF loader
 
-```
+```toml
 [lib]
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-solana-program = "2.1.4"
+pinocchio = "0.6.0"
 ```
 
-### Step 3: Create Directory Structure
+
+### Step 3: Project Structure
+Create the following directory structure:
 ```
 📦src
  ┣ 📂instructions
@@ -395,7 +397,7 @@ solana-program = "2.1.4"
 ```
 
 ### Step 4: Implement process_instruction
-Define the program entry point in lib.rs with the process_instruction, that is a common convention in native programs
+The process_instruction function serves as the program's entry point and this process name is a common convention in native programs. It verifies the program ID, parses instruction data, and delegates the operation to the correct handler.
 
 ```rust
 use instructions::VaultInstructions;
@@ -408,122 +410,127 @@ use solana_program::{entrypoint, pubkey};
 mod instructions;
 use instructions::*;
 
-// always use pubkey macro because creating it in runtime is gonna be more expensive
-const ID: Pubkey = pubkey!("22222222222222222222222222222222"); //  32 lenght string
+// Always define program IDs as constants using `pubkey!`.
+// This avoids runtime costs of deriving keys dynamically.
+const ID: Pubkey = pubkey!("22222222222222222222222222222222"); // Replace with your program's ID.
 
-entrypoint!(process_instruction); // is going to .....
+entrypoint!(process_instruction); // Macro that declares `process_instruction` as the program's entry point.
 
+/// Main function to process instructions.
 pub fn process_instruction(
-    program_id: &Pubkey,          // Reference to program ID
-    accounts: &[AccountInfo],     // Reference to array of accounts
-    data: &[u8],                  // Reference to array of 1 bytes
-) -> ProgramResult{               // ProgramResult is .....
-    // crate id check so cannot pick the program and deploy with other adddress
-    if program_id.ne(&crate::ID) {
+    program_id: &Pubkey,       // Reference to the program ID.
+    accounts: &[AccountInfo], // List of accounts involved in the transaction.
+    data: &[u8],              // Serialized instruction data (byte array).
+) -> ProgramResult {
+    // Ensure the program ID matches the expected value. This prevents hijacking by another program.
+    if program_id != &crate::ID {
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    // it will have an option and contain the discriminator and thedata to match the discriminator 
+    // Parse the instruction discriminator and its associated data.
+    // `split_first` separates the first byte (discriminator) from the rest (payload).
     let (discriminator, data) = data
         .split_first()
         .ok_or(ProgramError::InvalidInstructionData)?;
 
+    
+    let amount = u64::from_le_bytes([data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]]);
+
+    match VaultInstructions::try_from(discriminator)? {
+        VaultInstructions::Deposit => todo!(),
+        VaultInstructions::Withdraw => todo!(),
+    }
 }
 ```
 
-step 5 - mod.rs
+### Step 5: Define Instruction Module
+Create the instructions module in `instructions/mod.rs` to manage the vault operations and implement instruction dispatching.
+
 ```rust
-pub mod deposit;
-pub mod withdraw;
+pub mod deposit;  // Deposit handler.
+pub mod withdraw; // Withdraw handler.
+
 use solana_program::program_error::ProgramError;
 
+/// Enum representing possible vault instructions.
 pub enum VaultInstructions {
-    Deposit,
-    Withdraw
+    Deposit,  // Instruction to deposit lamports into the vault.
+    Withdraw, // Instruction to withdraw lamports from the vault.
 }
 
+/// Convert a discriminator byte into a `VaultInstructions` enum variant.
 impl TryFrom<&u8> for VaultInstructions {
     type Error = ProgramError;
 
     fn try_from(discriminator: &u8) -> Result<Self, Self::Error> {
-        match discriminator { 
+        match discriminator {
             0 => Ok(VaultInstructions::Deposit),
             1 => Ok(VaultInstructions::Withdraw),
-            _ => Err(ProgramError::InvalidInstructionData)
+            _ => Err(ProgramError::InvalidInstructionData), // Invalid discriminator.
         }
     }
 }
 ```
 
-add that match in lib.rs
+### Step 6: Implement the deposit Handler
+The deposit instruction transfers lamports from the user's account to the vault.
+
 ```rust
-    let amount = u64::from_le_bytes([data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]]);
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program::invoke, program_error::ProgramError,
+    pubkey::Pubkey, system_instruction::transfer,
+};
 
-    match VaultInstructions::try_from(discriminator)? {
-        VaultInstructions::Deposit => deposit::process(accounts, amount),
-        VaultInstructions::Withdraw => withdraw::process(accounts, amount),
-    }
-```
-
-step 6 - instructions(deposit)
-```rust
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program::invoke, program_error::ProgramError, pubkey::Pubkey, system_instruction::transfer};
-
+/// Processes the deposit instruction.
 pub fn process(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
+    // Validate the account array structure.
     let [signer, vault, _system_program] = accounts else {
-        return Err(ProgramError::InvalidAccountData)
+        return Err(ProgramError::InvalidAccountData);
     };
 
-    // pda check
-    let (pda, bump) = Pubkey::try_find_program_address(
-        &[signer.key.as_ref()], 
-        &crate::ID
-    ).ok_or(ProgramError::InvalidSeeds)?;
+    // Derive the Program Derived Address (PDA) for the vault and validate it.
+    let (pda, _bump) = Pubkey::try_find_program_address(&[signer.key.as_ref()], &crate::ID)
+        .ok_or(ProgramError::InvalidSeeds)?;
+    assert_eq!(&pda, vault.key); // Ensure the PDA matches the vault's public key.
 
-    assert_eq!(&pda, vault.key);
-
-    // invoke(instruction, account_infos)
+    // Perform the transfer of lamports from the signer to the vault account.
     invoke(
-        &transfer(
-            signer.key, 
-            vault.key, 
-            lamports
-        ), 
-        accounts
+        &transfer(signer.key, vault.key, lamports),
+        accounts, // Pass account references required for the transfer.
     )
 }
 ```
 
-step 7 - instructions(withdraw)
+### Step 7: Implement the withdraw Handler
+The withdraw instruction transfers lamports from the vault back to the user's account.
+
 ```rust
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed, program_error::ProgramError, pubkey::Pubkey, system_instruction::transfer};
 
+/// Processes the withdraw instruction.
 pub fn process(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
+    // Validate the account array structure.
     let [vault, signer, _system_program] = accounts else {
-        return Err(ProgramError::InvalidAccountData)
+        return Err(ProgramError::InvalidAccountData);
     };
 
-    // pda check
-    let (pda, bump) = Pubkey::try_find_program_address(
-        &[signer.key.as_ref()], 
-        &crate::ID
-    ).ok_or(ProgramError::InvalidSeeds)?;
+    // Derive the Program Derived Address (PDA) for the vault and validate it.
+    let (pda, bump) = Pubkey::try_find_program_address(&[signer.key.as_ref()], &crate::ID)
+        .ok_or(ProgramError::InvalidSeeds)?;
+    assert_eq!(&pda, vault.key); // Ensure the PDA matches the vault's public key.
 
-    assert_eq!(&pda, vault.key);
-
+    // Perform the transfer of lamports from the vault back to the signer account.
     invoke_signed(
-        &transfer(
-            signer.key, 
-            vault.key, 
-            lamports
-        ), 
-        accounts,
-        &[&[signer.key.as_ref()]]
+        &transfer(vault.key, signer.key, lamports),
+        accounts, // Pass account references required for the transfer.
+        &[&[signer.key.as_ref(), &[bump]]], // Include PDA seeds for signing.
     )
 }
+
 ```
 
-step 8 - change match statement in lib.rs
+### Step 8: Finalize the process_instruction Logic
+Update the match statement in `lib.rs` to dispatch the correct instruction handler:
 ```rust
 match VaultInstructions::try_from(discriminator)? {
     VaultInstructions::Deposit => deposit::process(accounts, amount),
@@ -531,4 +538,5 @@ match VaultInstructions::try_from(discriminator)? {
 }
 ```
 
-CU comparison
+build
+CU comparison(todo)
