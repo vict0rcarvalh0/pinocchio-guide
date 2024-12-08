@@ -53,7 +53,9 @@ pub fn process_advance_nonce_account<'a>(
 ```
 
 
-- Allocate: Reserves space in an existing account to store data but doesn’t initialize any content.
+### Allocate
+Reserves space in an existing account to store data but doesn’t initialize any content.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -93,7 +95,9 @@ pub fn process_allocate<'a>(
 }
 ```
 
-- AllocateWithSeed: Similar to Allocate, but allows deriving the account using a specific seed.
+### AllocateWithSeed
+Similar to Allocate, but allows deriving the account using a specific seed.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -145,7 +149,9 @@ pub fn process_allocate_with_seed<'a>(
 }
 ```
 
-- Assign: Changes the program owner of an existing account to a new program.
+### Assign
+Changes the program owner of an existing account to a new program.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -186,7 +192,9 @@ pub fn process_assign<'a>(
 }
 ```
 
-- AssignWithSeed: Changes the program owner of a seed-derived account.
+### AssignWithSeed
+Changes the program owner of a seed-derived account.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -234,10 +242,11 @@ pub fn process_assign_with_seed<'a>(
 
     Ok(())
 }
-
 ```
 
-- AuthorizeNonceAccount: Sets or changes the authority of a Nonce account, determining who can authorize nonce increments.
+### AuthorizeNonceAccount
+Sets or changes the authority of a Nonce account, determining who can authorize nonce increments.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -280,7 +289,9 @@ pub fn process_authorize_nonce_account<'a>(
 }
 ```
 
-- CreateAccount: Creates a new account on the blockchain and assigns it an initial balance.
+### CreateAccount
+Creates a new account on the blockchain and assigns it an initial balance.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -327,7 +338,9 @@ pub fn process_create_account<'a>(
 }
 ```
 
-- CreateAccountWithSeed: Creates a new seed-derived account and initializes it.
+### CreateAccountWithSeed
+Creates a new seed-derived account and initializes it.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -378,7 +391,9 @@ pub fn process_create_account_with_seed<'a>(
 }
 ```
 
-- InitializeNonceAccount: Sets up a Nonce account to enable the use of unique, reusable numbers in transactions.
+### InitializeNonceAccount
+Sets up a Nonce account to enable the use of unique, reusable numbers in transactions.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -421,10 +436,11 @@ pub fn process_initialize_nonce_account<'a>(
 
     Ok(())
 }
-
 ```
 
-- Transfer: Transfers lamports from one account to another.
+### Transfer
+Transfers lamports from one account to another.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -471,7 +487,8 @@ pub fn process_transfer<'a>(
 }
 ```
 
-- TransferWithSeed: Transfers lamports using a seed-derived account.
+### TransferWithSeed
+Transfers lamports using a seed-derived account.
 
 ```rust
 use pinocchio::{
@@ -528,10 +545,11 @@ pub fn process_transfer_with_seed<'a>(
 
     Ok(())
 }
-
 ```
 
-- UpdateNonceAccount: Updates metadata associated with a Nonce account.
+### UpdateNonceAccount
+Updates metadata associated with a Nonce account.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -569,7 +587,9 @@ pub fn process_update_nonce_account<'a>(
 }
 ```
 
-- WithdrawNonceAccount: Allows withdrawing lamports from a Nonce account to a destination account.
+### WithdrawNonceAccount
+Allows withdrawing lamports from a Nonce account to a destination account.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -634,7 +654,9 @@ pub fn process_withdraw_nonce_account<'a>(
 
 These instructions manage SPL token accounts and operations, which follow Solana's token standard.
 
-- Approve: Authorizes a spender to spend a specific amount of tokens.
+### Approve
+Authorizes a spender to spend a specific amount of tokens.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -695,7 +717,9 @@ pub fn process_approve<'a>(
 
 ```
 
-- ApproveChecked: A safer version of Approve, which verifies the number of decimals before granting authorization.
+### ApproveChecked
+A safer version of Approve, which verifies the number of decimals before granting authorization.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -761,7 +785,9 @@ pub fn process_approve_checked<'a>(
 }
 ```
 
-- Burn: Removes a specified amount of tokens from circulation, reducing the total supply.
+### Burn
+Removes a specified amount of tokens from circulation, reducing the total supply.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -826,7 +852,9 @@ pub fn process_burn<'a>(
 }
 ```
 
-- BurnChecked: A variant of Burn that includes decimal verification before burning tokens.
+### BurnChecked
+A variant of Burn that includes decimal verification before burning tokens.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -894,7 +922,9 @@ pub fn process_burn_checked<'a>(
 }
 ```
 
-- CloseAccount: Closes a token account, transferring any remaining lamports to the account owner.
+### CloseAccount
+Closes a token account, transferring any remaining lamports to the account owner.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -956,7 +986,9 @@ pub fn process_close_account<'a>(
 }
 ```
 
-- FreezeAccount: Freezes a token account, preventing any transfers until it is thawed.
+### FreezeAccount
+Freezes a token account, preventing any transfers until it is thawed.
+
 ```rust
 use pinocchio::{
     account_info::{next_account_info, AccountInfo},
@@ -1013,67 +1045,590 @@ pub fn process_freeze_account<'a>(
 }
 ```
 
-- InitializeAccount: Initializes a token account associated with a specific wallet.
+### InitializeAccount
+Initializes a token account associated with a specific wallet.
+
 ```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+};
+
+use crate::InitializeAccount;
+
+/// Processes the InitializeAccount instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]`  The account to initialize.
+///   1. `[]` The mint this account will be associated with.
+///   2. `[]` The new account's owner/multisignature.
+///   3. `[]` Rent sysvar.
+pub fn process_initialize_account<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    signers: &[Signer], // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let account_to_initialize = next_account_info(account_info_iter)?; // The account to initialize.
+    let mint_account = next_account_info(account_info_iter)?;          // The mint associated with the account.
+    let owner_account = next_account_info(account_info_iter)?;         // The new account's owner/multisignature.
+    let rent_sysvar = next_account_info(account_info_iter)?;           // Rent sysvar account.
+
+    // Ensure that the account to initialize is writable
+    if !account_to_initialize.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the rent sysvar is valid (you might need additional checks here)
+    if rent_sysvar.key != &solana_program::sysvar::rent::ID {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Creating the instruction instance
+    let initialize_account_instruction = InitializeAccount {
+        account: account_to_initialize,
+        mint: mint_account,
+        owner: owner_account,
+        rent_sysvar,
+    };
+
+    // Invoking the instruction
+    initialize_account_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
 
 ```
 
-- InitializeAccount2: Similar to InitializeAccount, but directly links the account to a public key.
+### InitializeMint
+Sets up a new Mint account for creating a new type of token.
+
 ```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    instruction::Signer,
+    pubkey::Pubkey,
+};
+
+use crate::InitializeMint;
+
+/// Processes the InitializeMint instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `decimals`: Number of decimals for the token.
+/// - `mint_authority`: The public key of the mint authority.
+/// - `freeze_authority`: An optional public key for the freeze authority.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITABLE]` Mint account.
+///   1. `[]` Rent sysvar.
+pub fn process_initialize_mint<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    decimals: u8,                   // Decimals for the mint.
+    mint_authority: &Pubkey,        // Public key of the mint authority.
+    freeze_authority: Option<&Pubkey>, // Optional public key of the freeze authority.
+    signers: &[Signer],             // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let mint_account = next_account_info(account_info_iter)?; // The mint account.
+    let rent_sysvar = next_account_info(account_info_iter)?;  // Rent sysvar account.
+
+    // Ensure the mint account is writable
+    if !mint_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the rent sysvar is valid (you might need additional checks here)
+    if rent_sysvar.key != &solana_program::sysvar::rent::ID {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Creating the instruction instance
+    let initialize_mint_instruction = InitializeMint {
+        mint: mint_account,
+        rent_sysvar,
+        decimals,
+        mint_authority,
+        freeze_authority,
+    };
+
+    // Invoking the instruction
+    initialize_mint_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
 
 ```
 
-- InitializeAccount3: An additional variant that simplifies the account initialization process further.
+### MintTo
+Mints new tokens and assigns them to a specific account.
+
 ```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    instruction::Signer,
+    pubkey::Pubkey,
+    program_error::ProgramError,
+};
+
+use crate::MintTo;
+
+/// Processes the MintTo instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `amount`: The amount of tokens to mint.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The mint account.
+///   1. `[WRITE]` The account to mint tokens to.
+///   2. `[SIGNER]` The mint's minting authority.
+pub fn process_mint_to<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,            // Amount of tokens to mint.
+    signers: &[Signer],     // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let mint_account = next_account_info(account_info_iter)?; // The mint account.
+    let token_account = next_account_info(account_info_iter)?; // The recipient token account.
+    let mint_authority = next_account_info(account_info_iter)?; // The mint authority account.
+
+    // Ensure the mint account is writable
+    if !mint_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the token account is writable
+    if !token_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the mint authority is a signer
+    if !mint_authority.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let mint_to_instruction = MintTo {
+        mint: mint_account,
+        account: token_account,
+        mint_authority,
+        amount,
+    };
+
+    // Invoking the instruction
+    mint_to_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
 
 ```
 
-- InitializeMint: Sets up a new Mint account for creating a new type of token.
+### MintToChecked
+A safer version of MintTo that verifies decimals before minting tokens.
+
 ```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    instruction::Signer,
+    pubkey::Pubkey,
+    program_error::ProgramError,
+};
+
+use crate::MintToChecked;
+
+/// Processes the MintToChecked instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `amount`: The amount of tokens to mint.
+/// - `decimals`: The number of decimal places for the tokens.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The mint account.
+///   1. `[WRITE]` The account to mint tokens to.
+///   2. `[SIGNER]` The mint's minting authority.
+pub fn process_mint_to_checked<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,            // Amount of tokens to mint.
+    decimals: u8,           // Number of decimal places.
+    signers: &[Signer],     // The signers array needed to authorize the transaction.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let mint_account = next_account_info(account_info_iter)?; // The mint account.
+    let token_account = next_account_info(account_info_iter)?; // The recipient token account.
+    let mint_authority = next_account_info(account_info_iter)?; // The mint authority account.
+
+    // Ensure the mint account is writable
+    if !mint_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the token account is writable
+    if !token_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the mint authority is a signer
+    if !mint_authority.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let mint_to_checked_instruction = MintToChecked {
+        mint: mint_account,
+        account: token_account,
+        mint_authority,
+        amount,
+        decimals,
+    };
+
+    // Invoking the instruction
+    mint_to_checked_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
+
+### Revoke
+Revokes permissions previously granted via Approve.
+
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    instruction::Signer,
+    program_error::ProgramError,
+};
+
+use crate::Revoke;
+
+/// Processes the Revoke instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The source account.
+///   1. `[SIGNER]` The source account owner.
+pub fn process_revoke<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    signers: &[Signer], // The signers array for authorization.
+) -> ProgramResult {
+    // Extracting account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let source_account = next_account_info(account_info_iter)?; // Source account to revoke delegate.
+    let owner_account = next_account_info(account_info_iter)?; // Owner of the source account.
+
+    // Ensure the source account is writable
+    if !source_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the owner account is a signer
+    if !owner_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Creating the instruction instance
+    let revoke_instruction = Revoke {
+        source: source_account,
+        authority: owner_account,
+    };
+
+    // Invoking the instruction
+    revoke_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
+
+### SetAuthority
+Transfers authority over a token or an account to another address.
+
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    instruction::Signer,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+
+use crate::{SetAuthority, AuthorityType};
+
+/// Processes the SetAuthority instruction.
+///
+/// ### Accounts:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The mint or account to change the authority of.
+///   1. `[SIGNER]` The current authority of the mint or account.
+pub fn process_set_authority<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    authority_type: AuthorityType,
+    new_authority: Option<&Pubkey>, // Optional new authority
+    signers: &[Signer],
+) -> ProgramResult {
+    // Extract account information
+    let account_info_iter = &mut accounts.iter();
+
+    // Accounts passed to the instruction
+    let account_to_update = next_account_info(account_info_iter)?; // The account to update.
+    let current_authority = next_account_info(account_info_iter)?; // Current authority of the account.
+
+    // Ensure the account to update is writable
+    if !account_to_update.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Ensure the current authority account is a signer
+    if !current_authority.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Create the instruction instance
+    let set_authority_instruction = SetAuthority {
+        account: account_to_update,
+        authority: current_authority,
+        authority_type,
+        new_authority,
+    };
+
+    // Invoke the instruction
+    set_authority_instruction.invoke_signed(signers)?;
+
+    Ok(())
+}
+```
+
+### SyncNative
+Synchronizes the lamports balance of a wrapped SOL account with its stored value.
+
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+
+use crate::SyncNative;
+
+/// Process the SyncNative instruction.
+///
+/// ### Parameters:
+/// - `accounts`: List of the accounts involved in the instruction..
+///
+/// ### Accounts:
+///   0. `[WRITE]` The native token account to be syncronized with the subjacent lamports.
+pub fn process_sync_native<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    program_id: &Pubkey,
+) -> ProgramResult {
+    // Iterate over the provided accounts
+    let account_info_iter = &mut accounts.iter();
+
+    // The account to be syncronized
+    let native_token_account = next_account_info(account_info_iter)?;
+
+    // Validate if the account is writable
+    if !native_token_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Validate if the account is owned by the program
+    if native_token_account.owner != program_id {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Construct the SyncNative instruction
+    let sync_native_instruction = SyncNative {
+        native_token: native_token_account,
+    };
+
+    // Invoke the instruction
+    sync_native_instruction.invoke()
+}
 
 ```
 
-- InitializeMint2: An alternative version of InitializeMint with compatibility tweaks.
-```rust
+### ThawAccount
+Unfreezes a previously frozen account.
 
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+
+use crate::ThawAccount;
+
+/// Processes the ThawAccount instruction.
+///
+/// ### Parameters:
+/// - `accounts`: List of accounts involved in the instruction.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The token account to be thawed.
+///   1. `[]` The token mint associated with the account.
+///   2. `[SIGNER]` The freeze authority for the mint.
+pub fn process_thaw_account<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    program_id: &Pubkey,
+) -> ProgramResult {
+    // Iterate over the provided accounts
+    let account_info_iter = &mut accounts.iter();
+
+    // The account to thaw
+    let token_account = next_account_info(account_info_iter)?;
+
+    // The associated mint account
+    let mint_account = next_account_info(account_info_iter)?;
+
+    // The freeze authority account
+    let freeze_authority_account = next_account_info(account_info_iter)?;
+
+    // Validate that the token account is writable
+    if !token_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Validate the token account is owned by the current program
+    if token_account.owner != program_id {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Validate the mint account
+    if mint_account.owner != program_id {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Validate the freeze authority is a signer
+    if !freeze_authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Construct the ThawAccount instruction
+    let thaw_account_instruction = ThawAccount {
+        account: token_account,
+        mint: mint_account,
+        freeze_authority: freeze_authority_account,
+    };
+
+    // Invoke the instruction
+    thaw_account_instruction.invoke()
+}
 ```
 
-- MintTo: Mints new tokens and assigns them to a specific account.
-```rust
+### Transfer
+Transfers tokens from one account to another.
 
+```rust
+use pinocchio::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+
+use crate::Transfer;
+
+/// Processes the Transfer instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts involved in the transfer.
+/// - `amount`: The amount of tokens to transfer.
+/// - `program_id`: The ID of the current program.
+///
+/// ### Accounts:
+///   0. `[WRITE]` The sender account.
+///   1. `[WRITE]` The recipient account.
+///   2. `[SIGNER]` The authority that approves the transfer.
+pub fn process_transfer<'a>(
+    accounts: &'a [AccountInfo<'a>],
+    amount: u64,
+    program_id: &Pubkey,
+) -> ProgramResult {
+    // Iterate over the provided accounts
+    let account_info_iter = &mut accounts.iter();
+
+    // The sender account
+    let sender_account = next_account_info(account_info_iter)?;
+
+    // The recipient account
+    let recipient_account = next_account_info(account_info_iter)?;
+
+    // The authority account
+    let authority_account = next_account_info(account_info_iter)?;
+
+    // Validate that the sender account is writable
+    if !sender_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Validate that the recipient account is writable
+    if !recipient_account.is_writable {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Validate the sender and recipient accounts are owned by the program
+    if sender_account.owner != program_id || recipient_account.owner != program_id {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Validate the authority is a signer
+    if !authority_account.is_signer {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Construct the Transfer instruction
+    let transfer_instruction = Transfer {
+        from: sender_account,
+        to: recipient_account,
+        authority: authority_account,
+        amount,
+    };
+
+    // Invoke the instruction
+    transfer_instruction.invoke()
 ```
 
-- MintToChecked: A safer version of MintTo that verifies decimals before minting tokens.
-```rust
+### TransferChecked
+A variant of Transfer that performs additional decimal verification.
 
-```
-
-- Revoke: Revokes permissions previously granted via Approve.
-```rust
-
-```
-
-- SetAuthority: Transfers authority over a token or an account to another address.
-```rust
-
-```
-
-- SyncNative: Synchronizes the lamports balance of a wrapped SOL account with its stored value.
-```rust
-
-```
-
-- ThawAccount: Unfreezes a previously frozen account.
-```rust
-
-```
-
-- Transfer: Transfers tokens from one account to another.
-```rust
-
-```
-
-- TransferChecked: A variant of Transfer that performs additional decimal verification.
 ```rust
 
 ```
