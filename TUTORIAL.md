@@ -260,11 +260,22 @@ By running the `anchor build` command you should build your Anchor Vault and sta
 ## Pinocchio Vault
 
 step 1
-cargo new --lib native-vault
+cargo init --lib native-vault
 
 cargo add pinocchio
 
 step 2
+adjust the crate type to cdylib(why) in cargo toml
+[lib]
+# Should be cdylib to build correctly with cargo build sbf
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+# Typically native programs need the solana program (cargo add solana-program)
+solana-program = "2.1.4"
+
+
+step 3
 create structure
 ```
 📦src
@@ -273,30 +284,6 @@ create structure
  ┃ ┣ 📜mod.rs
  ┃ ┗ 📜withdraw.rs
  ┗ 📜lib.rs
-```
-
-step 3 - mod.rs
-```rust
-pub mod deposit;
-pub mod withdraw;
-use solana_program::program_error::ProgramError;
-
-pub enum VaultInstructions {
-    Deposit,
-    Withdraw
-}
-
-impl TryFrom<&u8> for VaultInstructions {
-    type Error = ProgramError;
-
-    fn try_from(discriminator: &u8) -> Result<Self, Self::Error> {
-        match discriminator {
-            0 => Ok(VaultInstructions::Deposit),
-            1 => Ok(VaultInstructions::Withdraw),
-            _ => Err(ProgramError::InvalidInstructionData)
-        }
-    }
-}
 ```
 
 step 4 - lib.rs
@@ -312,38 +299,63 @@ mod instructions;
 use instructions::*;
 
 // always use pubkey macro because creating it in runtime is gonna be more expensive
-const ID: Pubkey = pubkey!("22222222222222222222222222222222");
+const ID: Pubkey = pubkey!("22222222222222222222222222222222"); //  32 lenght string
 
-entrypoint!(process_instruction);
+entrypoint!(process_instruction); // is going to .....
 
 pub fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult{
+    program_id: &Pubkey,          // Reference to program ID
+    accounts: &[AccountInfo],     // Reference to array of accounts
+    data: &[u8],                  // Reference to array of 1 bytes
+) -> ProgramResult{               // ProgramResult is .....
     // crate id check so cannot pick the program and deploy with other adddress
     if program_id.ne(&crate::ID) {
         return Err(ProgramError::IncorrectProgramId);
     }
 
+    // it will have an option and contain the discriminator and thedata to match the discriminator 
     let (discriminator, data) = data
         .split_first()
         .ok_or(ProgramError::InvalidInstructionData)?;
 
+}
+```
 
-    // assert!(data.len(), 8);
-    // le bytes require to have a u8 8 slice -> less computation from rust
+step 5 - mod.rs
+```rust
+pub mod deposit;
+pub mod withdraw;
+use solana_program::program_error::ProgramError;
+
+pub enum VaultInstructions {
+    Deposit,
+    Withdraw
+}
+
+impl TryFrom<&u8> for VaultInstructions {
+    type Error = ProgramError;
+
+    fn try_from(discriminator: &u8) -> Result<Self, Self::Error> {
+        match discriminator { 
+            0 => Ok(VaultInstructions::Deposit),
+            1 => Ok(VaultInstructions::Withdraw),
+            _ => Err(ProgramError::InvalidInstructionData)
+        }
+    }
+}
+```
+
+add that match in lib.rs
+```rust
     let amount = u64::from_le_bytes([data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]]);
 
     match VaultInstructions::try_from(discriminator)? {
-        VaultInstructions::Deposit => todo!(),
-        VaultInstructions::Withdraw => todo!(),
+        VaultInstructions::Deposit => deposit::process(accounts, amount),
+        VaultInstructions::Withdraw => withdraw::process(accounts, amount),
     }
-}
-
 ```
 
-step 5 - instructions(deposit)
+step 6 - instructions(deposit)
 ```rust
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program::invoke, program_error::ProgramError, pubkey::Pubkey, system_instruction::transfer};
 
@@ -372,7 +384,7 @@ pub fn process(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
 }
 ```
 
-step 6 - instructions(withdraw)
+step 7 - instructions(withdraw)
 ```rust
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed, program_error::ProgramError, pubkey::Pubkey, system_instruction::transfer};
 
@@ -401,7 +413,7 @@ pub fn process(accounts: &[AccountInfo], lamports: u64) -> ProgramResult {
 }
 ```
 
-step 7 - change match statement in lib.rs
+step 8 - change match statement in lib.rs
 ```rust
 match VaultInstructions::try_from(discriminator)? {
     VaultInstructions::Deposit => deposit::process(accounts, amount),
