@@ -21,6 +21,16 @@ use pinocchio::{
 
 use crate::AdvanceNonceAccount;
 
+/// Processes the `AdvanceNonceAccount` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The Nonce account.
+/// 1. `[]` The recent blockhashes sysvar.
+/// 2. `[SIGNER]` The Nonce authority.
 pub fn process_advance_nonce_account<'a>(
     accounts: &'a [AccountInfo<'a>],
     signers: &[Signer],
@@ -66,6 +76,15 @@ use pinocchio::{
 
 use crate::Allocate;
 
+/// Processes the `Allocate` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `space`: The number of bytes to allocate.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE, SIGNER]` The account to allocate space for.
 pub fn process_allocate<'a>(
     accounts: &'a [AccountInfo<'a>],
     space: u64,                       // Determines how many bytes of memory are allocated for the account.
@@ -109,6 +128,18 @@ use pinocchio::{
 
 use crate::AllocateWithSeed;
 
+/// Processes the `AllocateWithSeed` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `seed`: The seed used to derive the account's address.
+/// - `space`: The number of bytes to allocate.
+/// - `owner`: The program that will own the allocated account.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The allocated account.
+/// 1. `[SIGNER]` The base account used to derive the allocated account.
 pub fn process_allocate_with_seed<'a>(
     accounts: &'a [AccountInfo<'a>],
     seed: &str,            // String used along with the base public key to derive the allocated account's address.
@@ -163,6 +194,15 @@ use pinocchio::{
 
 use crate::Assign;
 
+/// Processes the `Assign` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `owner`: The public key of the new program owner.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE, SIGNER]` The account to be reassigned to a new program owner.
 pub fn process_assign<'a>(
     accounts: &'a [AccountInfo<'a>],
     owner: &Pubkey,      // Public key of the program to assign as the new owner of the account.
@@ -206,6 +246,17 @@ use pinocchio::{
 
 use crate::AssignWithSeed;
 
+/// Processes the `AssignWithSeed` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `seed`: The seed used to derive the account.
+/// - `owner`: The public key of the new program owner.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The account to be reassigned.
+/// 1. `[SIGNER]` The base account used to derive the reassigned account.
 pub fn process_assign_with_seed<'a>(
     accounts: &'a [AccountInfo<'a>],
     seed: &str,
@@ -258,6 +309,16 @@ use pinocchio::{
 
 use crate::AuthorizeNonceAccount;
 
+/// Processes the `AuthorizeNonceAccount` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `new_authority`: The public key of the new authority.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The Nonce account.
+/// 1. `[SIGNER]` The current Nonce authority.
 pub fn process_authorize_nonce_account<'a>(
     accounts: &'a [AccountInfo<'a>],
     new_authority: &Pubkey,  // Pubkey of the new entity to be authorized to execute nonce instructions on the account.
@@ -303,6 +364,18 @@ use pinocchio::{
 
 use crate::CreateAccount;
 
+/// Processes the `CreateAccount` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `lamports`: The number of lamports to transfer to the new account.
+/// - `space`: The number of bytes to allocate for the new account.
+/// - `owner`: The program that will own the new account.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE, SIGNER]` The funding account.
+/// 1. `[WRITE, SIGNER]` The new account to be created.
 pub fn process_create_account<'a>(
     accounts: &'a [AccountInfo<'a>],
     lamports: u64,   // Number of lamports to transfer to the new account.
@@ -352,6 +425,20 @@ use pinocchio::{
 
 use crate::CreateAccountWithSeed;
 
+/// Processes the `CreateAccountWithSeed` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `seed`: The seed used to derive the account.
+/// - `lamports`: The number of lamports to transfer to the new account.
+/// - `space`: The number of bytes to allocate for the new account.
+/// - `owner`: The program that will own the new account.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE, SIGNER]` The funding account.
+/// 1. `[WRITE, SIGNER]` The new account to be created.
+/// 2. `[OPTIONAL]` The base account used to derive the new account (if applicable).
 pub fn process_create_account_with_seed<'a>(
     accounts: &'a [AccountInfo<'a>],
     seed: &'a str,      // The ASCII string that will be used as the seed to derive the address.
@@ -405,6 +492,17 @@ use pinocchio::{
 
 use crate::InitializeNonceAccount;
 
+/// Processes the `InitializeNonceAccount` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `authority`: The public key of the entity authorized to manage the Nonce account.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The Nonce account.
+/// 1. `[]` The recent blockhashes sysvar.
+/// 2. `[]` The rent sysvar.
 pub fn process_initialize_nonce_account<'a>(
     accounts: &'a [AccountInfo<'a>],
     authority: &'a Pubkey,   // Pubkey representing the entity authorized to interact with the nonce account.
@@ -451,6 +549,16 @@ use pinocchio::{
 
 use crate::Transfer;
 
+/// Processes the `Transfer` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `lamports`: The number of lamports to transfer.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE, SIGNER]` The source account.
+/// 1. `[WRITE]` The destination account.
 pub fn process_transfer<'a>(
     accounts: &'a [AccountInfo<'a>],
     lamports: u64,        // The amount of lamports to transfer.
@@ -500,6 +608,19 @@ use pinocchio::{
 
 use crate::TransferWithSeed;
 
+/// Processes the `TransferWithSeed` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `lamports`: The number of lamports to transfer.
+/// - `seed`: The seed used to derive the source account.
+/// - `owner`: The program that owns the source account.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The source account.
+/// 1. `[SIGNER]` The base account used to derive the source account.
+/// 2. `[WRITE]` The destination account.
 pub fn process_transfer_with_seed<'a>(
     accounts: &'a [AccountInfo<'a>],
     lamports: u64,        //  The amount of lamports to transfer.
@@ -560,6 +681,14 @@ use pinocchio::{
 
 use crate::UpdateNonceAccount;
 
+/// Processes the `UpdateNonceAccount` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The Nonce account.
 pub fn process_update_nonce_account<'a>(
     accounts: &'a [AccountInfo<'a>],
     signers: &[Signer],  // The signers array needed to authorize the transaction.
@@ -600,6 +729,19 @@ use pinocchio::{
 
 use crate::WithdrawNonceAccount;
 
+/// Processes the `WithdrawNonceAccount` instruction.
+///
+/// ### Parameters:
+/// - `accounts`: The accounts required for the instruction.
+/// - `lamports_to_withdraw`: The number of lamports to withdraw.
+/// - `signers`: The signers array needed to authorize the transaction.
+///
+/// ### Accounts:
+/// 0. `[WRITE]` The Nonce account.
+/// 1. `[WRITE]` The recipient account.
+/// 2. `[]` The recent blockhashes sysvar.
+/// 3. `[]` The rent sysvar.
+/// 4. `[SIGNER]` The Nonce authority.
 pub fn process_withdraw_nonce_account<'a>(
     accounts: &'a [AccountInfo<'a>],
     signers: &[Signer],          // The signers array required to authorize the transaction.
