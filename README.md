@@ -1409,7 +1409,6 @@ pub fn process_mint_to<'a>(
 
     Ok(())
 }
-
 ```
 
 ### MintToChecked

@@ -40,6 +40,21 @@ mod initialize_account;
 #[cfg(feature = "initialize_account")]
 use initialize_account::*;
 
+#[cfg(feature = "mint_to")]
+mod mint_to;
+#[cfg(feature = "mint_to")]
+use mint_to::*;
+
+#[cfg(feature = "mint_to_checked")]
+mod mint_to_checked;
+#[cfg(feature = "mint_to_checked")]
+use mint_to_checked::*;
+
+#[cfg(feature = "revoke")]
+mod revoke;
+#[cfg(feature = "revoke")]
+use revoke::*;
+
 #[cfg(feature = "transfer")]
 mod transfer;
 #[cfg(feature = "transfer")]
