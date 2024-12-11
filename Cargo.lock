@@ -1508,7 +1508,6 @@ dependencies = [
 [[package]]
 name = "mollusk-svm"
 version = "0.0.6"
-source = "git+https://github.com/deanmlittle/mollusk#e57998bc4ebf08ed6d43358c6c28d154ca3e081c"
 dependencies = [
  "bincode",
  "solana-bpf-loader-program",
@@ -1517,13 +1516,13 @@ dependencies = [
  "solana-program-runtime",
  "solana-sdk",
  "solana-system-program",
+ "solana-timings",
  "thiserror",
 ]
 
 [[package]]
 name = "mollusk-token"
 version = "0.1.0"
-source = "git+https://github.com/deanmlittle/mollusk#e57998bc4ebf08ed6d43358c6c28d154ca3e081c"
 dependencies = [
  "mollusk-svm",
  "solana-sdk",

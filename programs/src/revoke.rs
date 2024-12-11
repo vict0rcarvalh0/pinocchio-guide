@@ -5,7 +5,7 @@ use pinocchio::{
     program_error::ProgramError,
 };
 
-use pinocchio::instructions::Revoke;
+use pinocchio_token::instructions::Revoke;
 
 /// Processes the Revoke instruction.
 ///
@@ -26,15 +26,10 @@ pub fn process_revoke<'a>(
     };
 
     // Ensure the source account is writable
-    if !source_account.is_writable() {
-        return Err(ProgramError::InvalidAccountData);
-    }
     assert!(source_account.is_writable(), ProgramError::InvalidAccountData);
 
     // Ensure the owner account is a signer
-    if !owner_account.is_signer {
-        return Err(ProgramError::MissingRequiredSignature);
-    }
+    assert!(owner_account.is_signer(), ProgramError::MissingRequiredSignature);
 
     // Creating the instruction instance
     let revoke_instruction = Revoke {
