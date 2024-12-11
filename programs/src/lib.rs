@@ -25,6 +25,21 @@ mod burn_checked;
 #[cfg(feature = "burn_checked")]
 use burn_checked::*;
 
+#[cfg(feature = "close_account")]
+mod close_account;
+#[cfg(feature = "close_account")]
+use close_account::*;
+
+#[cfg(feature = "freeze_account")]
+mod freeze_account;
+#[cfg(feature = "freeze_account")]
+use freeze_account::*;
+
+#[cfg(feature = "initialize_account")]
+mod initialize_account;
+#[cfg(feature = "initialize_account")]
+use initialize_account::*;
+
 #[cfg(feature = "transfer")]
 mod transfer;
 #[cfg(feature = "transfer")]

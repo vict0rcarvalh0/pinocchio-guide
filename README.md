@@ -1272,7 +1272,6 @@ pub fn process_initialize_account<'a>(
 
     Ok(())
 }
-
 ```
 
 ### InitializeMint

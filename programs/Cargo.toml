@@ -13,6 +13,8 @@ approve_checked = []
 burn = []
 burn_checked = []
 transfer = []
+close_account = []
+initialize_account = []
 
 [dependencies]
 pinocchio = { git = "https://github.com/febo/pinocchio.git" }
