@@ -3,6 +3,7 @@
 ## Table of contents
 
 ## Introduction
+
 The Pinocchio Guide is your go-to resource for understanding and implementing core account management functionalities within the Solana blockchain. This guide emphasizes foundational principles, code-level explanations, and best practices to empower developers in leveraging Solana’s unique system of transaction optimization.
 
 Pinocchio simplifies advanced blockchain programming by offering a robust and optimized framework for system-level operations.
@@ -10,9 +11,11 @@ Pinocchio simplifies advanced blockchain programming by offering a robust and op
 This documentation focuses on showing examples of instruction calls, detailing its structure and usage to enhance your development experience.
 
 ## System Instructions
+
 Pinocchio supports a range of system instructions that are essential for managing accounts and ensuring transaction security. These instructions operate at the core of Solana's blockchain to handle critical features like account creation, nonce advancement, and rent management.
 
 ### AdvanceNonceAccount
+
 Increments the nonce value in a nonce account to ensure transaction uniqueness and replay protection. It is particularly useful for preventing double-spending or replaying transactions in Solana's deterministic environment.
 
 ```rust
@@ -66,8 +69,8 @@ pub fn process_advance_nonce_account<'a>(
 }
 ```
 
-
 ### Allocate
+
 Reserves space in an account for a specific size. Use this when an account needs to store custom data but does not require immediate funding.
 
 ```rust
@@ -119,6 +122,7 @@ pub fn process_allocate<'a>(
 ```
 
 ### AllocateWithSeed
+
 Similar to Allocate, but derives the account address using a seed and a base account. Use it to allocate accounts deterministically based on predictable inputs.
 
 ```rust
@@ -185,6 +189,7 @@ pub fn process_allocate_with_seed<'a>(
 ```
 
 ### Assign
+
 Changes the program ownership of an account. This is helpful when transferring ownership of an account to another program, for example, during a program upgrade.
 
 ```rust
@@ -213,7 +218,7 @@ pub fn process_assign<'a>(
     signers: &[Signer],
 ) -> ProgramResult {
     // Extracting account information
-    let account_info_iter = &mut accounts.iter(); 
+    let account_info_iter = &mut accounts.iter();
 
     // Accounts passed to the instruction
     let assigned_account = next_account_info(account_info_iter)?; // The account to be reassigned to a new program owner.
@@ -237,6 +242,7 @@ pub fn process_assign<'a>(
 ```
 
 ### AssignWithSeed
+
 Like Assign, but the account address is derived using a seed and a base account. Use it when ownership needs to be transferred for deterministically derived accounts.
 
 ```rust
@@ -300,6 +306,7 @@ pub fn process_assign_with_seed<'a>(
 ```
 
 ### AuthorizeNonceAccount
+
 Updates the authority of a nonce account to a new signer. It’s used when the current nonce authority needs to delegate or transfer control to another keypair.
 
 ```rust
@@ -355,6 +362,7 @@ pub fn process_authorize_nonce_account<'a>(
 ```
 
 ### CreateAccount
+
 Creates a new account on the blockchain, assigns ownership to a program, and funds the account. This is a foundational instruction used whenever a new account needs to be initialized for use by a program.
 
 ```rust
@@ -416,6 +424,7 @@ pub fn process_create_account<'a>(
 ```
 
 ### CreateAccountWithSeed
+
 Creates a new account derived from a base account and a seed. Use this for predictable and reusable account addresses.
 
 ```rust
@@ -483,6 +492,7 @@ pub fn process_create_account_with_seed<'a>(
 ```
 
 ### InitializeNonceAccount
+
 Sets up an account as a nonce account, enabling it to manage nonces for transaction uniqueness. Use this when replay-protected transactions are critical.
 
 ```rust
@@ -541,6 +551,7 @@ pub fn process_initialize_nonce_account<'a>(
 ```
 
 ### Transfer
+
 Moves lamports (Solana's native token) between accounts. This is one of the most common operations for basic financial transactions.
 
 ```rust
@@ -600,6 +611,7 @@ pub fn process_transfer<'a>(
 ```
 
 ### TransferWithSeed
+
 Similar to Transfer, but supports transferring funds from an account derived using a seed and a base key. Use it for sending lamports from deterministically derived accounts.
 
 ```rust
@@ -673,6 +685,7 @@ pub fn process_transfer_with_seed<'a>(
 ```
 
 ### UpdateNonceAccount
+
 Modifies the state of a nonce account, typically to update its stored value. Use this to maintain nonce freshness and reliability.
 
 ```rust
@@ -721,6 +734,7 @@ pub fn process_update_nonce_account<'a>(
 ```
 
 ### WithdrawNonceAccount
+
 Withdraws lamports from a nonce account, reducing its balance. It is typically used to recover funds or adjust the available balance.
 
 ```rust
@@ -797,9 +811,11 @@ pub fn process_withdraw_nonce_account<'a>(
 ```
 
 ## Token Instructions
+
 Pinocchio provides an abstraction layer for interacting with Solana Program Library(SPL) tokens, enabling seamless management of fungible and non-fungible tokens. These instructions cover the entire lifecycle of token operations.
 
 ### Approve
+
 Grants another account the authority to transfer tokens on behalf of the current owner. Use it for scenarios where a third-party program or user needs temporary token control.
 
 ```rust
@@ -863,6 +879,7 @@ pub fn process_approve<'a>(
 ```
 
 ### ApproveChecked
+
 Functions like Approve but with additional checks to validate the mint and token amounts. Use it for increased security and integrity in token approval.
 
 ```rust
@@ -931,6 +948,7 @@ pub fn process_approve_checked<'a>(
 ```
 
 ### Burn
+
 Permanently destroys a specified number of tokens from an account, reducing the total supply. This is often used for deflationary token models or error corrections.
 
 ```rust
@@ -998,6 +1016,7 @@ pub fn process_burn<'a>(
 ```
 
 ### BurnChecked
+
 Similar to Burn, but with extra validation checks for the mint and token amounts. Use it when security is a priority during token destruction.
 
 ```rust
@@ -1068,6 +1087,7 @@ pub fn process_burn_checked<'a>(
 ```
 
 ### CloseAccount
+
 Closes a token account, reclaiming its lamports and returning them to the owner. This is used to clean up unused accounts and reduce storage costs.
 
 ```rust
@@ -1132,6 +1152,7 @@ pub fn process_close_account<'a>(
 ```
 
 ### FreezeAccount
+
 Freezes a token account, preventing further token transfers. This is useful for regulatory or security enforcement in token ecosystems.
 
 ```rust
@@ -1191,8 +1212,8 @@ pub fn process_freeze_account<'a>(
 ```
 
 ### InitializeAccount
-Sets up a token account for use with a specific token mint. This is a prerequisite for any token interaction.
 
+Sets up a token account for use with a specific token mint. This is a prerequisite for any token interaction.
 
 ```rust
 use pinocchio::{
@@ -1255,6 +1276,7 @@ pub fn process_initialize_account<'a>(
 ```
 
 ### InitializeMint
+
 Sets up a mint account, defining the token's supply and decimal precision. This is the starting point for creating new tokens.
 
 ```rust
@@ -1322,6 +1344,7 @@ pub fn process_initialize_mint<'a>(
 ```
 
 ### MintTo
+
 Creates new tokens and deposits them into a token account. Use it to increase the circulating supply of a token.
 
 ```rust
@@ -1391,6 +1414,7 @@ pub fn process_mint_to<'a>(
 ```
 
 ### MintToChecked
+
 Functions like MintTo but includes additional validation to ensure minting correctness. Use it for secure token issuance.
 
 ```rust
@@ -1462,6 +1486,7 @@ pub fn process_mint_to_checked<'a>(
 ```
 
 ### Revoke
+
 Revokes previously granted transfer authority from another account. This is used to restore exclusive control over tokens.
 
 ```rust
@@ -1518,6 +1543,7 @@ pub fn process_revoke<'a>(
 ```
 
 ### SetAuthority
+
 Updates the authority of a mint or token account. Use this to transfer or delegate control securely.
 
 ```rust
@@ -1579,6 +1605,7 @@ pub fn process_set_authority<'a>(
 ```
 
 ### SyncNative
+
 Synchronizes a native token account’s balance with its lamports. This is crucial for ensuring accuracy when working with Solana-native tokens.
 
 ```rust
@@ -1630,6 +1657,7 @@ pub fn process_sync_native<'a>(
 ```
 
 ### ThawAccount
+
 Reverses the effects of FreezeAccount, re-enabling transfers. Use it when the conditions for freezing an account are no longer applicable.
 
 ```rust
@@ -1700,6 +1728,7 @@ pub fn process_thaw_account<'a>(
 ```
 
 ### Transfer
+
 Moves tokens from one token account to another. This is the primary method for token transactions.
 
 ```rust
@@ -1773,6 +1802,7 @@ pub fn process_transfer<'a>(
 ```
 
 ### TransferChecked
+
 Like Transfer, but with additional checks for mint and token amount validation. Use it to enforce stricter security in token transfers.
 
 ```rust

@@ -1,0 +1,6 @@
+{
+	"rust-analyzer.cargo.extraEnv": {
+		"CARGO": "/Users/marcelofeitoza/.local/share/solana/install/active_release/bin/sdk/sbf/dependencies/platform-tools/rust/bin/cargo",
+		"RUSTC": "/Users/marcelofeitoza/.local/share/solana/install/active_release/bin/sdk/sbf/dependencies/platform-tools/rust/bin/rustc"
+	}
+}
