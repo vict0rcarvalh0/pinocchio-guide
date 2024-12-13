@@ -5,7 +5,7 @@ use pinocchio::{
     instruction::Signer,
 };
 
-use pinocchio::instructions::FreezeAccount;
+use pinocchio_token::instructions::FreezeAccount;
 
 /// Processes the FreezeAccount instruction.
 ///

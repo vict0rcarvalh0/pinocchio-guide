@@ -1,10 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
+    ProgramResult,
 };
+
 use pinocchio_token::instructions::Transfer;
 
-const ID: [u8; 32] = five8_const::decode_32_const("77777777777777777777777777777777777777777777");
 entrypoint!(process_instruction);
 
 pub fn process_instruction(
@@ -39,31 +39,30 @@ pub fn process_transfer(
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    // Validate that the sender account is writable
-    if !sender_account.is_writable() {
-        return Err(ProgramError::InvalidAccountData);
-    }
-    msg!("Sender account is writable");
-
-    // Validate that the recipient account is writable
-    if !recipient_account.is_writable() {
-        return Err(ProgramError::InvalidAccountData);
-    }
-    msg!("Recipient account is writable");
+    // Validate that the sender and recipient account is writable
+    assert!(
+        sender_account.is_writable(),
+        "Sender account is not writable"
+    );
+    assert!(
+        recipient_account.is_writable(),
+        "Recipient account is not writable"
+    );
 
     // Validate the sender and recipient accounts are owned by the program
-    if sender_account.owner() != token_program.key()
-        || recipient_account.owner() != token_program.key()
-    {
-        return Err(ProgramError::IncorrectProgramId);
-    }
-    msg!("Sender and recipient accounts are owned by the program");
+    assert_eq!(
+        sender_account.owner(),
+        token_program.key(),
+        "Sender account is not owned by the program"
+    );
+    assert_eq!(
+        recipient_account.owner(),
+        token_program.key(),
+        "Recipient account is not owned by the program"
+    );
 
     // Validate the authority is a signer
-    if !authority_account.is_signer() {
-        return Err(ProgramError::MissingRequiredSignature);
-    }
-    msg!("Authority is a signer");
+    assert!(authority_account.is_signer(), "Authority is not a signer");
 
     // Construct the Transfer instruction
     let transfer_instruction = Transfer {
@@ -72,11 +71,9 @@ pub fn process_transfer(
         authority: authority_account,
         amount,
     };
-    msg!("Created the instruction instance");
 
     // Invoke the instruction
     transfer_instruction.invoke()?;
-    msg!("Invoked the instruction");
 
     Ok(())
 }
@@ -87,7 +84,6 @@ mod tests {
     use pinocchio_token::state::TokenAccount;
     use solana_sdk::{
         account::{AccountSharedData, ReadableAccount, WritableAccount},
-        clock::Clock,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         program_pack::Pack,
@@ -97,20 +93,24 @@ mod tests {
     use spl_token::state::AccountState;
 
     #[test]
-    fn process_advance_nonce_account_test() {
-        let program_id = Pubkey::new_from_array(five8_const::decode_32_const(
-            "77777777777777777777777777777777777777777777",
-        ));
+    fn transfer_test() {
+        let program_id = Pubkey::new_from_array([
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01,
+        ]);
         let (token_program, token_program_account) = mollusk_token::token::keyed_account();
-        let mut mollusk = Mollusk::new(&program_id, "target/deploy/programs");
+        let mut mollusk = Mollusk::new(&program_id, "../target/deploy/programs");
         mollusk_token::token::add_program(&mut mollusk);
 
-        let mint = Pubkey::new_from_array(five8_const::decode_32_const(
-            "44444444444444444444444444444444444444444444",
-        ));
+        let mint = Pubkey::new_from_array([
+            0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+            0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+            0x02, 0x02, 0x02, 0x02,
+        ]);
 
         let signer = Pubkey::new_unique();
-        let signer_account = create_account(
+        let signer_account = AccountSharedData::new(
             1_000_000_000 * 10,
             spl_token::state::Account::LEN,
             &program_id,
@@ -118,7 +118,7 @@ mod tests {
         println!("signer_account balance: {:?}", signer_account.lamports());
 
         let recipient = Pubkey::new_unique();
-        let recipient_account = create_account(
+        let recipient_account = AccountSharedData::new(
             1_000_000_000 * 10,
             spl_token::state::Account::LEN,
             &program_id,
@@ -128,24 +128,50 @@ mod tests {
             recipient_account.lamports()
         );
 
-        let signer_ta = Pubkey::new_from_array(five8_const::decode_32_const(
-            "33333333333333333333333333333333333333333333",
-        ));
-        let recipient_ta = Pubkey::new_from_array(five8_const::decode_32_const(
-            "11111111111111111111111111111111111111111111",
-        ));
+        let signer_ta = Pubkey::new_from_array([
+            0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+            0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+            0x03, 0x03, 0x03, 0x03,
+        ]);
+        let recipient_ta = Pubkey::new_from_array([
+            0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+            0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+            0x04, 0x04, 0x04, 0x04,
+        ]);
 
-        let signer_ta_account: AccountSharedData = pack_token_account(&signer, &mint, 1_000_000);
-        let recipient_ta_account: AccountSharedData =
-            pack_token_account(&recipient, &mint, 1_000_000);
+        let mut signer_ta_account =
+            AccountSharedData::new(0, spl_token::state::Account::LEN, &spl_token::id());
+        spl_token::state::Account {
+            mint,
+            owner: signer,
+            amount: 1_000_000,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        }
+        .pack_into_slice(signer_ta_account.data_as_mut_slice());
+
+        let mut recipient_ta_account =
+            AccountSharedData::new(0, spl_token::state::Account::LEN, &spl_token::id());
+        spl_token::state::Account {
+            mint,
+            owner: recipient,
+            amount: 1_000_000,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        }
+        .pack_into_slice(recipient_ta_account.data_as_mut_slice());
 
         assert_eq!(signer_ta_account.owner(), &spl_token::id());
         assert_eq!(recipient_ta_account.owner(), &spl_token::id());
 
         let amount = 1_000_u64;
         let data = amount.to_le_bytes();
-
-        println!("data: {:?}", data);
 
         let instruction = Instruction::new_with_bytes(
             program_id,
@@ -167,38 +193,9 @@ mod tests {
                 (token_program, token_program_account.clone()),
             ],
         );
-    }
-
-    fn create_account(lamports: u64, data_len: usize, owner: &Pubkey) -> AccountSharedData {
-        AccountSharedData::new(lamports, data_len, owner)
-    }
-
-    fn pack_mint(mint_authority: &Pubkey, supply: u64) -> AccountSharedData {
-        let mut account = create_account(0, spl_token::state::Mint::LEN, &spl_token::id());
-        spl_token::state::Mint {
-            mint_authority: COption::Some(*mint_authority),
-            supply,
-            decimals: 9,
-            is_initialized: true,
-            freeze_authority: COption::None,
-        }
-        .pack_into_slice(account.data_as_mut_slice());
-        account
-    }
-
-    fn pack_token_account(owner: &Pubkey, mint: &Pubkey, amount: u64) -> AccountSharedData {
-        let mut account = create_account(0, spl_token::state::Account::LEN, &spl_token::id());
-        spl_token::state::Account {
-            mint: *mint,
-            owner: *owner,
-            amount,
-            delegate: COption::None,
-            state: AccountState::Initialized,
-            is_native: COption::None,
-            delegated_amount: 0,
-            close_authority: COption::None,
-        }
-        .pack_into_slice(account.data_as_mut_slice());
-        account
+        assert!(
+            !result.program_result.is_err(),
+            "Error while processing instruction",
+        );
     }
 }
