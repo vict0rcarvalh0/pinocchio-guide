@@ -7,7 +7,22 @@ edition = "2021"
 crate-type = ["cdylib", "lib"]
 
 [features]
+# System Program Instructions
 advance_nonce_account = []
+allocate = []
+allocate_with_seed = []
+assign = []
+assign_with_seed = []
+authorize_nonce_account = []
+create_account = []
+create_account_with_seed = []
+initialize_nonce_account = []
+transfer_lamports = []
+transfer_with_seed = []
+update_nonce_account = []
+withdraw_nonce_account = []
+
+# SPL Token Instructions
 approve = []
 approve_checked = []
 burn = []
@@ -21,7 +36,7 @@ revoke = []
 set_authority = []
 sync_native = []
 thaw_account = []
-transfer = []
+transfer_tokens = []
 transfer_checked = []
 
 [dependencies]
@@ -37,6 +52,4 @@ solana-sdk = { workspace = true }
 solana-program = { workspace = true }
 mollusk-svm = { workspace = true }
 mollusk-token = { workspace = true }
-# mollusk-svm = { git = "https://github.com/deanmlittle/mollusk" }
-# mollusk-token = { git = "https://github.com/deanmlittle/mollusk" }
 spl-token = { workspace = true }
