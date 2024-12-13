@@ -1,13 +1,13 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     instruction::Signer,
     program_error::ProgramError,
     pubkey::Pubkey,
+    ProgramResult
 };
 
-use crate::{SetAuthority, AuthorityType};
-use pinocchio_token::instruction::SetAuthority;
+use pinocchio_token::instructions::{AuthorityType, SetAuthority};
 
 /// Processes the SetAuthority instruction.
 ///
@@ -19,7 +19,7 @@ use pinocchio_token::instruction::SetAuthority;
 ///   0. `[WRITE]` The mint or account to change the authority of.
 ///   1. `[SIGNER]` The current authority of the mint or account.
 pub fn process_set_authority<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     authority_type: AuthorityType,
     new_authority: Option<&Pubkey>, // Optional new authority
     signers: &[Signer],

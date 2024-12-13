@@ -1,9 +1,10 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::InitializeNonceAccount;
@@ -20,7 +21,7 @@ use pinocchio_system::instructions::InitializeNonceAccount;
 /// 1. `[]` The recent blockhashes sysvar.
 /// 2. `[]` The rent sysvar.
 pub fn process_initialize_nonce_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     authority: &'a Pubkey,   // Pubkey representing the entity authorized to interact with the nonce account.
     signers: &[Signer],      // Signers array needed to authorize the transaction.
 ) -> ProgramResult {

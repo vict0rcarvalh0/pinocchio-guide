@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::TransferChecked;
@@ -21,7 +22,7 @@ use pinocchio_token::instructions::TransferChecked;
 ///   2. `[WRITE]` The destination account.
 ///   3. `[SIGNER]` The source account's owner/delegate.
 pub fn process_transfer_checked<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     amount: u64,        // The amount of tokens to transfer.
     decimals: u8,       // The number of decimals for the token.
     signers: &[Signer], // The signers array needed to authorize the transaction.

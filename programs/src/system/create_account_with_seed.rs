@@ -1,9 +1,10 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::CreateAccountWithSeed;
@@ -23,7 +24,7 @@ use pinocchio_system::instructions::CreateAccountWithSeed;
 /// 1. `[WRITE, SIGNER]` The new account to be created.
 /// 2. `[OPTIONAL]` The base account used to derive the new account (if applicable).
 pub fn process_create_account_with_seed<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     seed: &'a str,      // The ASCII string that will be used as the seed to derive the address.
     lamports: u64,      // Number of lamports to transfer to the new account.
     space: u64,         // Number of bytes to allocate for the new account.

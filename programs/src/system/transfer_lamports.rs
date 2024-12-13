@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::Transfer;
@@ -18,7 +19,7 @@ use pinocchio_system::instructions::Transfer;
 /// 0. `[WRITE, SIGNER]` The source account.
 /// 1. `[WRITE]` The destination account.
 pub fn process_transfer<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     lamports: u64,        // The amount of lamports to transfer.
     signers: &[Signer],   // The signers array needed to authorize the transaction.
 ) -> ProgramResult {

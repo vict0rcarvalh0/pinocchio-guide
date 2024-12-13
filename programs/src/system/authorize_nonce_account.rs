@@ -1,9 +1,10 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::AuthorizeNonceAccount;
@@ -19,7 +20,7 @@ use pinocchio_system::instructions::AuthorizeNonceAccount;
 /// 0. `[WRITE]` The Nonce account.
 /// 1. `[SIGNER]` The current Nonce authority.
 pub fn process_authorize_nonce_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     new_authority: &Pubkey,  // Pubkey of the new entity to be authorized to execute nonce instructions on the account.
     signers: &[Signer],
 ) -> ProgramResult {

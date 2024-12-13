@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::Allocate;
@@ -17,7 +18,7 @@ use pinocchio_system::instructions::Allocate;
 /// ### Accounts:
 /// 0. `[WRITE, SIGNER]` The account to allocate space for.
 pub fn process_allocate<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     space: u64,                       // Determines how many bytes of memory are allocated for the account.
     signers: &[Signer],
 ) -> ProgramResult {

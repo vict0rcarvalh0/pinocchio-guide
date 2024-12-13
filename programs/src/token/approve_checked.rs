@@ -1,6 +1,9 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Signer,
+    account_info::AccountInfo, 
+    entrypoint, 
+    instruction::Signer,
     program_error::ProgramError,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::ApproveChecked;
@@ -19,7 +22,7 @@ use pinocchio_token::instructions::ApproveChecked;
 ///   2. `[]` The delegate account.
 ///   3. `[SIGNER]` The source account owner.
 pub fn process_approve_checked<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     amount: u64,        // Amount of tokens to approve.
     decimals: u8,       // Token decimals for validation.
     signers: &[Signer], // The signers array needed to authorize the transaction.
@@ -33,13 +36,13 @@ pub fn process_approve_checked<'a>(
     assert!(
         source_account.is_writable(),
         ProgramError::InvalidAccountData
-    )
+    );
 
     // Ensure that the 'authority' account is a signer
     assert!(
         authority_account.is_signer()
         ProgramError::MissingRequiredSignature
-    )
+    );
 
     // Creating the instruction instance
     let approve_checked_instruction = ApproveChecked {

@@ -1,6 +1,9 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Signer,
+    account_info::AccountInfo, 
+    entrypoint, 
+    instruction::Signer,
     program_error::ProgramError,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::Burn;
@@ -17,7 +20,7 @@ use pinocchio_token::instructions::Burn;
 ///   1. `[WRITE]` The token mint.
 ///   2. `[SIGNER]` The account's owner/delegate.
 pub fn process_burn<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     amount: u64,        // Amount of tokens to burn.
     signers: &[Signer], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {

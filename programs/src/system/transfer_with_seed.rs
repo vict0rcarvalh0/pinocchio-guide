@@ -1,8 +1,10 @@
 use pinocchio::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
+    account_info::AccountInfo,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::TransferWithSeed;
@@ -21,7 +23,7 @@ use pinocchio_system::instructions::TransferWithSeed;
 /// 1. `[SIGNER]` The base account used to derive the source account.
 /// 2. `[WRITE]` The destination account.
 pub fn process_transfer_with_seed<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     lamports: u64,        //  The amount of lamports to transfer.
     seed: &'a str,        // The seed used to derive the address of the funding account.
     owner: &'a Pubkey,    // The address of the program that will own the new account.

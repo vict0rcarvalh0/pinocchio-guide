@@ -1,9 +1,10 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::AssignWithSeed;
@@ -20,7 +21,7 @@ use pinocchio_system::instructions::AssignWithSeed;
 /// 0. `[WRITE]` The account to be reassigned.
 /// 1. `[SIGNER]` The base account used to derive the reassigned account.
 pub fn process_assign_with_seed<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     seed: &str,
     owner: &Pubkey,
     signers: &[Signer],

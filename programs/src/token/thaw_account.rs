@@ -1,8 +1,9 @@
 use pinocchio::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
+    account_info::AccountInfo,
+    entrypoint,
     program_error::ProgramError,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::ThawAccount;
@@ -17,7 +18,7 @@ use pinocchio_token::instructions::ThawAccount;
 ///   1. `[]` The token mint associated with the account.
 ///   2. `[SIGNER]` The freeze authority for the mint.
 pub fn process_thaw_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     program_id: &Pubkey,
 ) -> ProgramResult {
     // Iterate over the provided accounts
@@ -26,25 +27,16 @@ pub fn process_thaw_account<'a>(
     };
 
     // Validate that the token account is writable
-    if !token_account.is_writable {
-        return Err(ProgramError::InvalidAccountData);
-    }
     assert!(token_account.is_writable(), ProgramError::InvalidAccountData);
 
     // Validate the token account is owned by the current program
-    if token_account.owner != program_id {
-        return Err(ProgramError::IncorrectProgramId);
-    }
+    assert!(token_account.owner() != program_id, ProgramError::IncorrectProgramId);
 
     // Validate the mint account
-    if mint_account.owner != program_id {
-        return Err(ProgramError::IncorrectProgramId);
-    }
+    assert!(mint_account.owner() != program_id, ProgramError::IncorrectProgramId);
 
     // Validate the freeze authority is a signer
-    if !freeze_authority_account.is_signer {
-        return Err(ProgramError::MissingRequiredSignature);
-    }
+    assert!(freeze_authority_account.is_signer(), ProgramError::MissingRequiredSignature);
 
     // Construct the ThawAccount instruction
     let thaw_account_instruction = ThawAccount {

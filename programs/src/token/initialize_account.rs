@@ -1,8 +1,10 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::InitializeAccount;
@@ -33,7 +35,7 @@ pub fn process_instruction(
 ///   2. `[]` The new account's owner/multisignature.
 ///   3. `[]` Rent sysvar.
 pub fn process_initialize_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     signers: &[Signer], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information

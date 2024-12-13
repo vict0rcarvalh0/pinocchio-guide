@@ -1,9 +1,10 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::AllocateWithSeed;
@@ -21,7 +22,7 @@ use pinocchio_system::instructions::AllocateWithSeed;
 /// 0. `[WRITE]` The allocated account.
 /// 1. `[SIGNER]` The base account used to derive the allocated account.
 pub fn process_allocate_with_seed<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     seed: &str,            // String used along with the base public key to derive the allocated account's address.
     space: u64,            // The number of bytes to allocate for the account.
     owner: &Pubkey,        // The program that will own the allocated account.

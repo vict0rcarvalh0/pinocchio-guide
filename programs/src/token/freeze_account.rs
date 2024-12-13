@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::FreezeAccount;
@@ -18,7 +19,7 @@ use pinocchio_token::instructions::FreezeAccount;
 ///   1. `[]` The token mint.
 ///   2. `[SIGNER]` The mint freeze authority.
 pub fn process_freeze_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     signers: &[Signer], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information

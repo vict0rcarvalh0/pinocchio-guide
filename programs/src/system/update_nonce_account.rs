@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    ProgramResult
 };
 
 use pinocchio_system::instructions::UpdateNonceAccount;
@@ -16,7 +17,7 @@ use pinocchio_system::instructions::UpdateNonceAccount;
 /// ### Accounts:
 /// 0. `[WRITE]` The Nonce account.
 pub fn process_update_nonce_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     signers: &[Signer],  // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information

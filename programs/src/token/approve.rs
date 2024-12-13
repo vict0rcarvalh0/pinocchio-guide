@@ -1,6 +1,9 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint::ProgramResult, instruction::Signer,
+    account_info::AccountInfo,
+    entrypoint,
+    instruction::Signer,
     program_error::ProgramError,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::Approve;
@@ -17,13 +20,13 @@ use pinocchio_token::instructions::Approve;
 ///   1. `[]` The delegate account.
 ///   2. `[SIGNER]` The source account owner.
 pub fn process_approve<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     amount: u64,        // Amount of tokens to approve.
     signers: &[Signer], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
     let [source_account, delegate_account, authority_account] = accounts else {
-        return Err(ProgramError::NotEnoughKeys);
+        return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure that the 'source' account is writable

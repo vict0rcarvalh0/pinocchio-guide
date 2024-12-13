@@ -1,3 +1,9 @@
+mod system;
+use system::*;
+
+mod token;
+use token::*;
+
 // /// System Program Instructions
 // #[cfg(feature = "advance_nonce_account")]
 // mod advance_nonce_account;
@@ -132,10 +138,10 @@
 // #[cfg(feature = "thaw_account")]
 // use thaw_account::*;
 
-// #[cfg(feature = "transfer_tokens")]
-// mod transfer_tokens;
-// #[cfg(feature = "transfer_tokens")]
-// use transfer_tokens::*;
+#[cfg(feature = "transfer_tokens")]
+mod transfer_tokens;
+#[cfg(feature = "transfer_tokens")]
+use transfer_tokens::*;
 
 // #[cfg(feature = "transfer_checked")]
 // mod transfer_checked;

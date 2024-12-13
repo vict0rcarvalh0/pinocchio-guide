@@ -1,12 +1,13 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
-use pinocchio::instructions::Assign;
+use pinocchio_system::instructions::Assign;
 
 /// Processes the `Assign` instruction.
 ///
@@ -18,7 +19,7 @@ use pinocchio::instructions::Assign;
 /// ### Accounts:
 /// 0. `[WRITE, SIGNER]` The account to be reassigned to a new program owner.
 pub fn process_assign<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     owner: &Pubkey,      // Public key of the program to assign as the new owner of the account.
     signers: &[Signer],
 ) -> ProgramResult {

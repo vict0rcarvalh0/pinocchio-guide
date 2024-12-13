@@ -1,12 +1,12 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
     pubkey::Pubkey,
+    ProgramResult
 };
 
-use crate::CreateAccount;
 use pinocchio_system::instructions::CreateAccount;
 
 /// Processes the `CreateAccount` instruction.
@@ -22,7 +22,7 @@ use pinocchio_system::instructions::CreateAccount;
 /// 0. `[WRITE, SIGNER]` The funding account.
 /// 1. `[WRITE, SIGNER]` The new account to be created.
 pub fn process_create_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     lamports: u64,   // Number of lamports to transfer to the new account.
     space: u64,      // Number of bytes to allocate for the new account.
     owner: &Pubkey,  // Pubkey of the program that will own the new account.

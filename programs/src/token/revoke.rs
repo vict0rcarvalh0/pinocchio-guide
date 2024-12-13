@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     instruction::Signer,
     program_error::ProgramError,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::Revoke;
@@ -17,7 +18,7 @@ use pinocchio_token::instructions::Revoke;
 ///   0. `[WRITE]` The source account.
 ///   1. `[SIGNER]` The source account owner.
 pub fn process_revoke<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     signers: &[Signer], // The signers array for authorization.
 ) -> ProgramResult {
     // Extracting account information

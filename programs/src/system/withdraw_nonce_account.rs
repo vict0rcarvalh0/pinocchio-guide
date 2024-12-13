@@ -1,11 +1,11 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    ProgramResult
 };
 
-use crate::WithdrawNonceAccount;
 use pinocchio_system::instructions::WithdrawNonceAccount;
 
 /// Processes the `WithdrawNonceAccount` instruction.
@@ -22,7 +22,7 @@ use pinocchio_system::instructions::WithdrawNonceAccount;
 /// 3. `[]` The rent sysvar.
 /// 4. `[SIGNER]` The Nonce authority.
 pub fn process_withdraw_nonce_account<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     signers: &[Signer],          // The signers array required to authorize the transaction.
     lamports_to_withdraw: u64,   // The amount of lamports to withdraw.
 ) -> ProgramResult {

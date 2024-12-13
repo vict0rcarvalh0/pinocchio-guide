@@ -1,8 +1,9 @@
 use pinocchio::{
     account_info::AccountInfo,
-    entrypoint::ProgramResult,
+    entrypoint,
     program_error::ProgramError,
     pubkey::Pubkey,
+    ProgramResult
 };
 
 use pinocchio_token::instructions::SyncNative;
@@ -15,7 +16,7 @@ use pinocchio_token::instructions::SyncNative;
 /// ### Accounts:
 ///   0. `[WRITE]` The native token account to be syncronized with the subjacent lamports.
 pub fn process_sync_native<'a>(
-    accounts: &'a [AccountInfo<'a>],
+    accounts: &'a [AccountInfo],
     program_id: &Pubkey,
 ) -> ProgramResult {
     // Iterate over the provided accounts
@@ -27,7 +28,7 @@ pub fn process_sync_native<'a>(
     assert!(native_token_account.is_writable(), ProgramError::InvalidAccountData);
 
     // Validate if the account is owned by the program
-    assert_eq!(native_token_account.owner, program_id, ProgramError::InvalidProgramId);
+    assert_eq!(native_token_account.owner(), program_id, ProgramError::InvalidProgramId);
 
     // Construct the SyncNative instruction
     let sync_native_instruction = SyncNative {
