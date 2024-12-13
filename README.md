@@ -1651,7 +1651,6 @@ pub fn process_sync_native<'a>(
     // Invoke the instruction
     sync_native_instruction.invoke()
 }
-
 ```
 
 ### ThawAccount

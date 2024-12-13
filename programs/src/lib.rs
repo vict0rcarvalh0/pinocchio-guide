@@ -55,7 +55,27 @@ mod revoke;
 #[cfg(feature = "revoke")]
 use revoke::*;
 
+#[cfg(feature = "set_authority")]
+mod set_authority;
+#[cfg(feature = "set_authority")]
+use set_authority::*;
+
+#[cfg(feature = "sync_native")]
+mod sync_native;
+#[cfg(feature = "sync_native")]
+use sync_native::*;
+
+#[cfg(feature = "thaw_account")]
+mod thaw_account;
+#[cfg(feature = "thaw_account")]
+use thaw_account::*;
+
 #[cfg(feature = "transfer")]
 mod transfer;
 #[cfg(feature = "transfer")]
 use transfer::*;
+
+#[cfg(feature = "transfer_checked")]
+mod transfer_checked;
+#[cfg(feature = "transfer_checked")]
+use transfer_checked::*;
