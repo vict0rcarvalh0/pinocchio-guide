@@ -8,6 +8,20 @@ use pinocchio::{
 
 use pinocchio_token::instructions::ThawAccount;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_thaw_account(accounts)
+}
+
 /// Processes the ThawAccount instruction.
 ///
 /// ### Parameters:
@@ -27,16 +41,16 @@ pub fn process_thaw_account<'a>(
     };
 
     // Validate that the token account is writable
-    assert!(token_account.is_writable(), ProgramError::InvalidAccountData);
+    assert!(token_account.is_writable());
 
     // Validate the token account is owned by the current program
-    assert!(token_account.owner() != program_id, ProgramError::IncorrectProgramId);
+    assert!(token_account.owner() != program_id);
 
     // Validate the mint account
-    assert!(mint_account.owner() != program_id, ProgramError::IncorrectProgramId);
+    assert!(mint_account.owner() != program_id);
 
     // Validate the freeze authority is a signer
-    assert!(freeze_authority_account.is_signer(), ProgramError::MissingRequiredSignature);
+    assert!(freeze_authority_account.is_signer());
 
     // Construct the ThawAccount instruction
     let thaw_account_instruction = ThawAccount {

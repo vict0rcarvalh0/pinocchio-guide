@@ -5,6 +5,7 @@ use pinocchio::{
 
 use pinocchio_token::instructions::Transfer;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 entrypoint!(process_instruction);
 
 pub fn process_instruction(

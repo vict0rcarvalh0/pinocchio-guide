@@ -9,6 +9,20 @@ use pinocchio::{
 
 use pinocchio_system::instructions::TransferWithSeed;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_transfer_with_seed(accounts, lamports, seed, owner, signers)
+}
+
 /// Processes the `TransferWithSeed` instruction.
 ///
 /// ### Parameters:
@@ -35,13 +49,13 @@ pub fn process_transfer_with_seed<'a>(
     };
 
     // Ensure that the 'from' account is writable
-    assert!(from_account.is_writable(), ProgramError::InvalidAccountData);
+    assert!(from_account.is_writable());
 
     // Ensure that the 'base' account is a signer
-    assert!(base_account.is_signer(), ProgramError::MissingRequiredSignature);
+    assert!(base_account.is_signer());
 
     // Ensure that the 'to' account is writable
-    assert!(to_account.is_writable(), ProgramError::InvalidAccountData);
+    assert!(to_account.is_writable());
 
     // Creating the instruction instance
     let transfer_instruction = TransferWithSeed {

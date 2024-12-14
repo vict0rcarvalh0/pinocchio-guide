@@ -8,6 +8,20 @@ use pinocchio::{
 
 use pinocchio_token::instructions::SyncNative;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_sync_native(accounts)
+}
+
 /// Process the SyncNative instruction.
 ///
 /// ### Parameters:
@@ -25,10 +39,10 @@ pub fn process_sync_native<'a>(
     };
 
     // Validate if the account is writable
-    assert!(native_token_account.is_writable(), ProgramError::InvalidAccountData);
+    assert!(native_token_account.is_writable());
 
     // Validate if the account is owned by the program
-    assert_eq!(native_token_account.owner(), program_id, ProgramError::InvalidProgramId);
+    assert_eq!(native_token_account.owner(), program_id);
 
     // Construct the SyncNative instruction
     let sync_native_instruction = SyncNative {

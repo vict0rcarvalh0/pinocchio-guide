@@ -44,10 +44,10 @@ pub fn process_initialize_account<'a>(
     };
 
     // Ensure that the account to initialize is writable
-    assert!(account_to_initialize.is_writable(), ProgramError::InvalidAccountData);
+    assert!(account_to_initialize.is_writable());
 
     // Ensure the rent sysvar is valid (you might need additional checks here)
-    assert_eq!(rent_sysvar.key(), &solana_program::sysvar::rent::ID, ProgramError::InvalidAccountData);
+    assert_eq!(rent_sysvar.key(), &solana_program::sysvar::rent::ID);
 
     // Creating the instruction instance
     let initialize_account_instruction = InitializeAccount {

@@ -8,6 +8,20 @@ use pinocchio::{
 
 use pinocchio_token::instructions::Approve;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_approve(accounts, amount, signers)
+}
+
 /// Processes the Approve instruction.
 ///
 /// ### Parameters:
@@ -32,13 +46,11 @@ pub fn process_approve<'a>(
     // Ensure that the 'source' account is writable
     assert!(
         source_account.is_writable(),
-        ProgramError::InvalidAccountData
     );
 
     // Ensure that the 'authority' account is a signer
     assert!(
         authority_account.is_signer(),
-        ProgramError::MissingRequiredSignature
     );
 
     // Creating the instruction instance

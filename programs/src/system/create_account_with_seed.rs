@@ -9,6 +9,20 @@ use pinocchio::{
 
 use pinocchio_system::instructions::CreateAccountWithSeed;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_create_account_with_seed(accounts, seed, lamports, space, owner, signers)
+}
+
 /// Processes the `CreateAccountWithSeed` instruction.
 ///
 /// ### Parameters:
@@ -37,7 +51,7 @@ pub fn process_create_account_with_seed<'a>(
     };
 
     // Ensure that funding account and new account are signers
-    assert!(funding_account.is_signer() || new_account.is_signer(), ProgramError::MissingRequiredSignature);
+    assert!(funding_account.is_signer() || new_account.is_signer());
 
     // Creating the instruction instance
     let create_account_with_seed_instruction = CreateAccountWithSeed {

@@ -1,13 +1,23 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    pubkey::Pubkey,
-    ProgramResult
+    account_info::AccountInfo, entrypoint, instruction::Signer, program_error::ProgramError, pubkey::{self, Pubkey}, ProgramResult
 };
 
 use pinocchio_system::instructions::AllocateWithSeed;
+
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+
+    process_allocate_with_seed(accounts, seed, space, owner, signers)
+}
 
 /// Processes the `AllocateWithSeed` instruction.
 ///
@@ -34,10 +44,10 @@ pub fn process_allocate_with_seed<'a>(
     };
 
     // Ensure the base account is a signer
-    assert!(base_account.is_signer(), ProgramError::MissingRequiredSignature);
+    assert!(base_account.is_signer());
 
     // Validate the seed length
-    assert!(seed.len() > Pubkey::MAX_SEED_LEN, ProgramError::InvalidSeeds);
+    assert!(seed.len() > pubkey::MAX_SEED_LEN);
 
     // Creating the instruction instance
     let allocate_with_seed_instruction = AllocateWithSeed {

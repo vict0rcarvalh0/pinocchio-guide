@@ -8,6 +8,20 @@ use pinocchio::{
 
 use pinocchio_system::instructions::WithdrawNonceAccount;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_withdraw_nonce_account(accounts, signers, lamports_to_withdraw)
+}
+
 /// Processes the `WithdrawNonceAccount` instruction.
 ///
 /// ### Parameters:
@@ -32,10 +46,10 @@ pub fn process_withdraw_nonce_account<'a>(
     };
 
     // Ensure the necessary accounts are writable or readonly as required
-    assert!(nonce_account.is_writable() || recipient_account.is_writable(), ProgramError::InvalidAccountData);
+    assert!(nonce_account.is_writable() || recipient_account.is_writable());
 
     // Ensure the nonce authority is a signer
-    assert!(nonce_authority.is_signer(), ProgramError::MissingRequiredSignature);
+    assert!(nonce_authority.is_signer());
 
     // Creating the instruction instance
     let withdraw_nonce_instruction = WithdrawNonceAccount {

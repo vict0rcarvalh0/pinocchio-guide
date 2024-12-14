@@ -1339,7 +1339,6 @@ pub fn process_initialize_mint<'a>(
 
     Ok(())
 }
-
 ```
 
 ### MintTo

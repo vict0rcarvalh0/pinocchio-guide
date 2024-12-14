@@ -1,7 +1,6 @@
 use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
-    instruction::{Seed, Signer},
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,

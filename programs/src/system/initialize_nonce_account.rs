@@ -9,6 +9,20 @@ use pinocchio::{
 
 use pinocchio_system::instructions::InitializeNonceAccount;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_initialize_nonce_account(accounts, authority, signers)
+}
+
 /// Processes the `InitializeNonceAccount` instruction.
 ///
 /// ### Parameters:
@@ -31,7 +45,7 @@ pub fn process_initialize_nonce_account<'a>(
     };
 
     // Ensure that nonce account is writable
-    assert!(nonce_account.is_writable(), ProgramError::InvalidAccountData);
+    assert!(nonce_account.is_writable());
 
     // Creating the instruction instance
     let initialize_nonce_account_instruction = InitializeNonceAccount {

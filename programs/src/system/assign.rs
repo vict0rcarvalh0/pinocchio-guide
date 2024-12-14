@@ -9,6 +9,20 @@ use pinocchio::{
 
 use pinocchio_system::instructions::Assign;
 
+const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+entrypoint!(process_instruction);
+
+pub fn process_instruction(
+    _program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
+) -> ProgramResult {
+    if data.len() < 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    process_assign(accounts, owner, signers)
+}
+
 /// Processes the `Assign` instruction.
 ///
 /// ### Parameters:
@@ -29,7 +43,7 @@ pub fn process_assign<'a>(
     };
     
     // Ensure the assigned account is a signer
-    assert!(assigned_account.is_signer(), ProgramError::MissingRequiredSignature);
+    assert!(assigned_account.is_signer());
 
     // Creating the instruction instance
     let assign_instruction = Assign {
