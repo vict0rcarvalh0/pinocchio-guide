@@ -3,6 +3,7 @@ use pinocchio::{
     entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    pubkey::Pubkey,
     ProgramResult
 };
 

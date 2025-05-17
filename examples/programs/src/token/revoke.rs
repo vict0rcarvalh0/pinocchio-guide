@@ -1,12 +1,13 @@
 use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
-    program_error::ProgramError,
     instruction::Signer,
+    program_error::ProgramError,
+    pubkey::Pubkey,
     ProgramResult
 };
 
-use pinocchio_system::instructions::UpdateNonceAccount;
+use pinocchio_token::instructions::Revoke;
 
 const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 entrypoint!(process_instruction);
@@ -19,36 +20,41 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_update_nonce_account(accounts, signers)
+    process_revoke(accounts, signers)
 }
 
-/// Processes the `UpdateNonceAccount` instruction.
+/// Processes the Revoke instruction.
 ///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
 /// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
-/// 0. `[WRITE]` The Nonce account.
-pub fn process_update_nonce_account<'a>(
+///   0. `[WRITE]` The source account.
+///   1. `[SIGNER]` The source account owner.
+pub fn process_revoke<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer],  // The signers array needed to authorize the transaction.
+    signers: &[Signer], // The signers array for authorization.
 ) -> ProgramResult {
     // Extracting account information
-    let [nonce_account] = accounts else {
+    let [source_account, owner_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    // Ensure that the 'nonce_account' is writable
-    assert!(nonce_account.is_writable());
+    // Ensure the source account is writable
+    assert!(source_account.is_writable());
+
+    // Ensure the owner account is a signer
+    assert!(owner_account.is_signer());
 
     // Creating the instruction instance
-    let update_nonce_instruction = UpdateNonceAccount {
-        account: nonce_account,
+    let revoke_instruction = Revoke {
+        source: source_account,
+        authority: owner_account,
     };
 
     // Invoking the instruction
-    update_nonce_instruction.invoke_signed(signers)?;
+    revoke_instruction.invoke_signed(signers)?;
 
     Ok(())
 }

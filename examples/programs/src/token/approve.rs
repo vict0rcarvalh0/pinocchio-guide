@@ -1,12 +1,13 @@
 use pinocchio::{
-    account_info::AccountInfo, 
-    entrypoint, 
+    account_info::AccountInfo,
+    entrypoint,
     instruction::Signer,
     program_error::ProgramError,
+    pubkey::Pubkey,
     ProgramResult
 };
 
-use pinocchio_token::instructions::BurnChecked;
+use pinocchio_token::instructions::Approve;
 
 const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 entrypoint!(process_instruction);
@@ -19,37 +20,34 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_burn_checked(accounts, amount, decimals, signers)
+    process_approve(accounts, amount, signers)
 }
 
-/// Processes the BurnChecked instruction.
+/// Processes the Approve instruction.
 ///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
-/// - `amount`: The amount of tokens to burn.
-/// - `decimals`: The decimals for the token being burned.
+/// - `amount`: The amount of tokens to approve.
 /// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
-///   0. `[WRITE]` The account to burn from.
-///   1. `[WRITE]` The token mint.
-///   2. `[SIGNER]` The account's owner/delegate.
-pub fn process_burn_checked<'a>(
+///   0. `[WRITE]` The token account.
+///   1. `[]` The delegate account.
+///   2. `[SIGNER]` The source account owner.
+pub fn process_approve<'a>(
     accounts: &'a [AccountInfo],
-    amount: u64,        // Amount of tokens to burn.
-    decimals: u8,       // Number of decimals for the token.
+    amount: u64,        // Amount of tokens to approve.
     signers: &[Signer], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
-    let [burn_account, mint_account, authority_account] = accounts else {
+    let [source_account, delegate_account, authority_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    // Ensure that the 'burn' account is writable
-    assert!(burn_account.is_writable());
-
-    // Ensure that the 'mint' account is writable
-    assert!(mint_account.is_writable());
+    // Ensure that the 'source' account is writable
+    assert!(
+        source_account.is_writable(),
+    );
 
     // Ensure that the 'authority' account is a signer
     assert!(
@@ -57,16 +55,15 @@ pub fn process_burn_checked<'a>(
     );
 
     // Creating the instruction instance
-    let burn_checked_instruction = BurnChecked {
-        account: burn_account,
-        mint: mint_account,
+    let approve_instruction = Approve {
+        source: source_account,
+        delegate: delegate_account,
         authority: authority_account,
         amount,
-        decimals,
     };
 
     // Invoking the instruction
-    burn_checked_instruction.invoke_signed(signers)?;
+    approve_instruction.invoke_signed(signers)?;
 
     Ok(())
 }

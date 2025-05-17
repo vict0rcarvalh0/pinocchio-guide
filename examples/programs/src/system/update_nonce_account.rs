@@ -3,10 +3,11 @@ use pinocchio::{
     entrypoint,
     program_error::ProgramError,
     instruction::Signer,
+    pubkey::Pubkey,
     ProgramResult
 };
 
-use pinocchio_system::instructions::Transfer;
+use pinocchio_system::instructions::UpdateNonceAccount;
 
 const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 entrypoint!(process_instruction);
@@ -19,44 +20,36 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_transfer(accounts, lamports, signers)
+    process_update_nonce_account(accounts, signers)
 }
 
-/// Processes the `Transfer` instruction.
+/// Processes the `UpdateNonceAccount` instruction.
 ///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
-/// - `lamports`: The number of lamports to transfer.
 /// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
-/// 0. `[WRITE, SIGNER]` The source account.
-/// 1. `[WRITE]` The destination account.
-pub fn process_transfer<'a>(
+/// 0. `[WRITE]` The Nonce account.
+pub fn process_update_nonce_account<'a>(
     accounts: &'a [AccountInfo],
-    lamports: u64,        // The amount of lamports to transfer.
-    signers: &[Signer],   // The signers array needed to authorize the transaction.
+    signers: &[Signer],  // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
-    let [from_account, to_account] = accounts else {
+    let [nonce_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    // Ensure that the 'from' account is writable and a signer
-    assert!(from_account.is_writable() || from_account.is_signer());
-
-    // Ensure that the 'to' account is writable
-    assert!(to_account.is_writable());
+    // Ensure that the 'nonce_account' is writable
+    assert!(nonce_account.is_writable());
 
     // Creating the instruction instance
-    let transfer_instruction = Transfer {
-        from: from_account,
-        to: to_account,
-        lamports,
+    let update_nonce_instruction = UpdateNonceAccount {
+        account: nonce_account,
     };
 
     // Invoking the instruction
-    transfer_instruction.invoke_signed(signers)?;
+    update_nonce_instruction.invoke_signed(signers)?;
 
     Ok(())
 }

@@ -1,12 +1,13 @@
 use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
-    instruction::Signer,
     program_error::ProgramError,
+    pubkey::Pubkey,
+    instruction::Signer,
     ProgramResult
 };
 
-use pinocchio_token::instructions::Revoke;
+use pinocchio_system::instructions::Allocate;
 
 const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 entrypoint!(process_instruction);
@@ -19,41 +20,39 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_revoke(accounts, signers)
+    process_allocate(accounts, space, signers)
 }
 
-/// Processes the Revoke instruction.
+/// Processes the `Allocate` instruction.
 ///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
+/// - `space`: The number of bytes to allocate.
 /// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
-///   0. `[WRITE]` The source account.
-///   1. `[SIGNER]` The source account owner.
-pub fn process_revoke<'a>(
+/// 0. `[WRITE, SIGNER]` The account to allocate space for.
+pub fn process_allocate<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array for authorization.
+    space: u64,                       // Determines how many bytes of memory are allocated for the account.
+    signers: &[Signer],
 ) -> ProgramResult {
     // Extracting account information
-    let [source_account, owner_account] = accounts else {
+    let [allocate_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    // Ensure the source account is writable
-    assert!(source_account.is_writable());
-
-    // Ensure the owner account is a signer
-    assert!(owner_account.is_signer());
+    // Ensure the allocate account is a signer
+    assert!(allocate_account.is_signer());
 
     // Creating the instruction instance
-    let revoke_instruction = Revoke {
-        source: source_account,
-        authority: owner_account,
+    let allocate_instruction = Allocate {
+        account: allocate_account,
+        space,
     };
 
     // Invoking the instruction
-    revoke_instruction.invoke_signed(signers)?;
+    allocate_instruction.invoke_signed(signers)?;
 
     Ok(())
 }
