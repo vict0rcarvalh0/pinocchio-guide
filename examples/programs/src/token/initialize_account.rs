@@ -8,6 +8,7 @@ use pinocchio::{
 };
 
 use pinocchio_token::instructions::InitializeAccount;
+use spl_token::solana_program::sysvar;
 
 const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 entrypoint!(process_instruction);
@@ -47,7 +48,7 @@ pub fn process_initialize_account<'a>(
     assert!(account_to_initialize.is_writable());
 
     // Ensure the rent sysvar is valid (you might need additional checks here)
-    assert_eq!(rent_sysvar.key(), &solana_program::sysvar::rent::ID);
+    assert_eq!(rent_sysvar.key(), &spl_token::solana_program::sysvar::rent::ID);
 
     // Creating the instruction instance
     let initialize_account_instruction = InitializeAccount {

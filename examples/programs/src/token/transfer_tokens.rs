@@ -17,7 +17,7 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidInstructionData);
     }
     let amount = unsafe { *(data.as_ptr() as *const u64) };
-    process_transfer(accounts, amount, program_id)
+    process_transfer(accounts, amount)
 }
 
 /// Processes the Transfer instruction.
@@ -34,7 +34,6 @@ pub fn process_instruction(
 pub fn process_transfer(
     accounts: &[AccountInfo],
     amount: u64,
-    program_id: &Pubkey,
 ) -> ProgramResult {
     let [sender_account, recipient_account, authority_account, token_program] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);

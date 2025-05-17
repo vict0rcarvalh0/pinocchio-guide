@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -20,7 +20,10 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_close_account(accounts, signers)
+
+    let bump = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+
+    process_close_account(accounts, bump)
 }
 
 /// Processes the CloseAccount instruction.
@@ -35,7 +38,7 @@ pub fn process_instruction(
 ///   2. `[SIGNER]` The account's owner.
 pub fn process_close_account<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    bump: [u8; 1], // Bump seed for the signer account.
 ) -> ProgramResult {
     // Extracting account information
     let [close_account, destination_account, authority_account] = accounts else {
@@ -43,13 +46,13 @@ pub fn process_close_account<'a>(
     };
 
     // Ensure that the 'close' account is writable
-    assert!(close_account.is_writable());
+    assert!(close_account.is_writable(), "Clsoe account is not writable");
 
     // Ensure that the 'destination' account is writable
-    assert!(destination_account.is_writable());
+    assert!(destination_account.is_writable(), "Destination account is not writable");
 
     // Ensure that the 'authority' account is a signer
-    assert!(authority_account.is_signer());
+    assert!(authority_account.is_signer(), "Authority account is not writable");
 
     // Creating the instruction instance
     let close_account_instruction = CloseAccount {
@@ -58,8 +61,11 @@ pub fn process_close_account<'a>(
         authority: authority_account,
     };
 
+    let seeds = [Seed::from(b"authority_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    close_account_instruction.invoke_signed(signers)?;
+    close_account_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

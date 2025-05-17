@@ -33,7 +33,6 @@ pub fn process_instruction(
 ///   2. `[SIGNER]` The freeze authority for the mint.
 pub fn process_thaw_account<'a>(
     accounts: &'a [AccountInfo],
-    program_id: &Pubkey,
 ) -> ProgramResult {
     // Iterate over the provided accounts
     let [token_account, mint_account, freeze_authority_account] = accounts else {
@@ -42,12 +41,6 @@ pub fn process_thaw_account<'a>(
 
     // Validate that the token account is writable
     assert!(token_account.is_writable());
-
-    // Validate the token account is owned by the current program
-    assert!(token_account.owner() != program_id);
-
-    // Validate the mint account
-    assert!(mint_account.owner() != program_id);
 
     // Validate the freeze authority is a signer
     assert!(freeze_authority_account.is_signer());

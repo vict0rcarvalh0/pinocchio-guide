@@ -30,8 +30,7 @@ pub fn process_instruction(
 /// ### Accounts:
 ///   0. `[WRITE]` The native token account to be syncronized with the subjacent lamports.
 pub fn process_sync_native<'a>(
-    accounts: &'a [AccountInfo],
-    program_id: &Pubkey,
+    accounts: &'a [AccountInfo]
 ) -> ProgramResult {
     // Iterate over the provided accounts
     let [native_token_account] = accounts else {
@@ -40,9 +39,6 @@ pub fn process_sync_native<'a>(
 
     // Validate if the account is writable
     assert!(native_token_account.is_writable());
-
-    // Validate if the account is owned by the program
-    assert_eq!(native_token_account.owner(), program_id);
 
     // Construct the SyncNative instruction
     let sync_native_instruction = SyncNative {

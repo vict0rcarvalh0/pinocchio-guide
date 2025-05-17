@@ -1,7 +1,7 @@
 use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     program_error::ProgramError,
     pubkey::Pubkey,
     ProgramResult
@@ -20,7 +20,8 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_revoke(accounts, signers)
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+    process_revoke(accounts, bump)
 }
 
 /// Processes the Revoke instruction.
@@ -34,7 +35,7 @@ pub fn process_instruction(
 ///   1. `[SIGNER]` The source account owner.
 pub fn process_revoke<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array for authorization.
+    bump: [u8; 1], // The signers array for authorization.
 ) -> ProgramResult {
     // Extracting account information
     let [source_account, owner_account] = accounts else {
@@ -53,8 +54,11 @@ pub fn process_revoke<'a>(
         authority: owner_account,
     };
 
+    let seeds = [Seed::from(b"owner_account"), Seed::from(&bump)];
+    let signers = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    revoke_instruction.invoke_signed(signers)?;
+    revoke_instruction.invoke_signed(&signers)?;
 
     Ok(())
 }

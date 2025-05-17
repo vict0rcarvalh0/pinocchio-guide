@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -20,7 +20,8 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_freeze_account(accounts, signers)
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+    process_freeze_account(accounts, bump)
 }
 
 /// Processes the FreezeAccount instruction.
@@ -35,7 +36,7 @@ pub fn process_instruction(
 ///   2. `[SIGNER]` The mint freeze authority.
 pub fn process_freeze_account<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    bump: [u8; 1],  // Bump seed for the signer account.
 ) -> ProgramResult {
     // Extracting account information
     let [account_to_freeze, mint_account, freeze_authority] = accounts else {
@@ -55,8 +56,11 @@ pub fn process_freeze_account<'a>(
         freeze_authority,
     };
 
+    let seeds = [Seed::from(b"freeze_authority"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    freeze_account_instruction.invoke_signed(signers)?;
+    freeze_account_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

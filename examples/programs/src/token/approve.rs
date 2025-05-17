@@ -1,7 +1,7 @@
 use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     program_error::ProgramError,
     pubkey::Pubkey,
     ProgramResult
@@ -17,10 +17,12 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_approve(accounts, amount, signers)
+    let amount = unsafe { *(data.as_ptr().add(0) as *const u64) };
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(8) as *const [u8; 1]) };
+    process_approve(accounts, amount, bump)
 }
 
 /// Processes the Approve instruction.
@@ -37,7 +39,7 @@ pub fn process_instruction(
 pub fn process_approve<'a>(
     accounts: &'a [AccountInfo],
     amount: u64,        // Amount of tokens to approve.
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    bump: [u8; 1], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
     let [source_account, delegate_account, authority_account] = accounts else {
@@ -62,8 +64,11 @@ pub fn process_approve<'a>(
         amount,
     };
 
+    let seeds = [Seed::from(b"authority_account"), Seed::from(&bump)];
+    let signers = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    approve_instruction.invoke_signed(signers)?;
+    approve_instruction.invoke_signed(&signers)?;
 
     Ok(())
 }

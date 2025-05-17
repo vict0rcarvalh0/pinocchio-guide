@@ -1,10 +1,5 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    instruction::Signer,
-    pubkey::Pubkey,
-    program_error::ProgramError,
-    ProgramResult
+    account_info::AccountInfo, entrypoint, instruction::{Seed, Signer}, program_error::ProgramError, pubkey::Pubkey, ProgramResult
 };
 
 use pinocchio_token::instructions::MintToChecked;
@@ -17,12 +12,13 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
     let amount = unsafe { *(data.as_ptr() as *const u64) };
     let decimals = unsafe { *(data.as_ptr().add(8) as *const u8) };
-    process_mint_to_checked(accounts, amount, decimals, signers)
+    let bump = unsafe { *(data.as_ptr().add(9) as *const [u8; 1]) };
+    process_mint_to_checked(accounts, amount, decimals, bump)
 }
 
 /// Processes the MintToChecked instruction.
@@ -41,7 +37,7 @@ pub fn process_mint_to_checked<'a>(
     accounts: &'a [AccountInfo],
     amount: u64,            // Amount of tokens to mint.
     decimals: u8,           // Number of decimal places.
-    signers: &[Signer],     // The signers array needed to authorize the transaction.
+    bump: [u8; 1],          // Bump seed for the signer account.
 ) -> ProgramResult {
     // Extracting account information
     let [mint_account, token_account, mint_authority] = accounts else {
@@ -66,8 +62,11 @@ pub fn process_mint_to_checked<'a>(
         decimals,
     };
 
+    let seeds = [Seed::from(b"mint_authority"), Seed::from(&bump)];
+    let signers = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    mint_to_checked_instruction.invoke_signed(signers)?;
+    mint_to_checked_instruction.invoke_signed(&signers)?;
 
     Ok(())
 }
