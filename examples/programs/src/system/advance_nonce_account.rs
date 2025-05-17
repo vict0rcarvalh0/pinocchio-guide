@@ -60,8 +60,7 @@ pub fn process_advance_nonce_account<'a>(accounts: &'a [AccountInfo]) -> Program
 mod tests {
     use mollusk_svm::Mollusk;
     use solana_sdk::{
-        account::{AccountSharedData, ReadableAccount},
-        entrypoint::ProgramResult,
+        account::{AccountSharedData},
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
     };

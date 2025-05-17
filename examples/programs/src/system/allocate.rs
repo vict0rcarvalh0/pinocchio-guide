@@ -16,10 +16,14 @@ pub fn process_instruction(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],
     data: &[u8],
+    signers: &[Signer],
 ) -> ProgramResult {
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
+
+    let space = unsafe { *(data.as_ptr() as *const u64) };
+
     process_allocate(accounts, space, signers)
 }
 

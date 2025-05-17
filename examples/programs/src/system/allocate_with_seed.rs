@@ -11,11 +11,26 @@ pub fn process_instruction(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],
     data: &[u8],
+    owner: &Pubkey,
+    signers: &[Signer],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
 
+    // Extract `seed` length and `seed` string
+    let seed_len = unsafe { *(data.as_ptr().add(0) as *const u8) } as usize;
+    if data.len() < 1 + seed_len + 8 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    let seed = unsafe {
+        std::str::from_utf8_unchecked(&data[1..1 + seed_len])
+    };
+
+    // Extract `space` (u64)
+    let space = unsafe { *(data.as_ptr().add(1 + seed_len) as *const u64) };
+
+    // Call `process_allocate_with_seed` with the new parameters
     process_allocate_with_seed(accounts, seed, space, owner, signers)
 }
 
