@@ -1,7 +1,7 @@
 use pinocchio::{
     account_info::AccountInfo, 
     entrypoint, 
-    instruction::Signer,
+    instruction::{Signer, Seed},
     program_error::ProgramError,
     pubkey::Pubkey,
     ProgramResult
@@ -17,10 +17,13 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_approve_checked(accounts, amount, decimals, signers)
+    let amount = unsafe { *(data.as_ptr().add(0) as *const u64) };
+    let decimals = unsafe { *(data.as_ptr().add(8) as *const u8) };
+    let bump = unsafe { *(data.as_ptr().add(9) as *const [u8; 1]) };
+    process_approve_checked(accounts, amount, decimals, bump)
 }
 
 /// Processes the ApproveChecked instruction.
@@ -40,7 +43,7 @@ pub fn process_approve_checked<'a>(
     accounts: &'a [AccountInfo],
     amount: u64,        // Amount of tokens to approve.
     decimals: u8,       // Token decimals for validation.
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    bump: [u8; 1], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
     let [source_account, mint_account, delegate_account, authority_account] = accounts else {
@@ -67,8 +70,11 @@ pub fn process_approve_checked<'a>(
         decimals,
     };
 
+    let seeds = [Seed::from(b"authority_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    approve_checked_instruction.invoke_signed(signers)?;
+    approve_checked_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

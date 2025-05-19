@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -20,7 +20,8 @@ pub fn process_instruction(
     if data.len() < 8 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_update_nonce_account(accounts, signers)
+    let bump = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+    process_update_nonce_account(accounts, bump)
 }
 
 /// Processes the `UpdateNonceAccount` instruction.
@@ -33,7 +34,7 @@ pub fn process_instruction(
 /// 0. `[WRITE]` The Nonce account.
 pub fn process_update_nonce_account<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer],  // The signers array needed to authorize the transaction.
+    bump: [u8; 1],  
 ) -> ProgramResult {
     // Extracting account information
     let [nonce_account] = accounts else {
@@ -48,8 +49,11 @@ pub fn process_update_nonce_account<'a>(
         account: nonce_account,
     };
 
+    let seeds = [Seed::from(b"seeds"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    update_nonce_instruction.invoke_signed(signers)?;
+    update_nonce_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

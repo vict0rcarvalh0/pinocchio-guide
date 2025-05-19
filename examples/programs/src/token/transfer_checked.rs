@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,13 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_transfer_checked(accounts, amount, decimals, signers)
+    let amount = unsafe { *(data.as_ptr().add(0) as *const u64) };
+    let decimals = unsafe { *(data.as_ptr().add(8) as *const u8) };
+    let bump = unsafe { *(data.as_ptr().add(9) as *const [u8; 1]) };
+    process_transfer_checked(accounts, amount, decimals, bump)
 }
 
 /// Processes the TransferChecked instruction.
@@ -40,7 +43,7 @@ pub fn process_transfer_checked<'a>(
     accounts: &'a [AccountInfo],
     amount: u64,        // The amount of tokens to transfer.
     decimals: u8,       // The number of decimals for the token.
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    bump: [u8; 1], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
     let [from_account, mint_account, to_account, authority_account] = accounts else {
@@ -66,8 +69,11 @@ pub fn process_transfer_checked<'a>(
         decimals,
     };
 
+    let seeds = [Seed::from(b"authority_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    transfer_checked_instruction.invoke_signed(signers)?;
+    transfer_checked_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

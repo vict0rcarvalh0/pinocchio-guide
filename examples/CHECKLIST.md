@@ -3,8 +3,8 @@ This checklist is to track the examples that are complete developed and tested.
 
 ### SYSTEM
 - [X] advance_nonce_account
-- [x] allocate_with_seed
-- [x] allocate
+- [ ] allocate_with_seed
+- [ ] allocate
 - [ ] assign_with_seed
 - [ ] assign
 - [ ] authorize_nonce_account
