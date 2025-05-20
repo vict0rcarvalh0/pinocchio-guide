@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,12 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_transfer(accounts, lamports, signers)
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+    let lamports = unsafe { *(data.as_ptr().add(1) as *const u64) };
+    process_transfer(accounts, lamports, bump)
 }
 
 /// Processes the `Transfer` instruction.
@@ -36,7 +38,7 @@ pub fn process_instruction(
 pub fn process_transfer<'a>(
     accounts: &'a [AccountInfo],
     lamports: u64,        // The amount of lamports to transfer.
-    signers: &[Signer],   // The signers array needed to authorize the transaction.
+    bump: [u8; 1],   // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
     let [from_account, to_account] = accounts else {
@@ -56,8 +58,11 @@ pub fn process_transfer<'a>(
         lamports,
     };
 
+    let seeds = [Seed::from(b"from_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    transfer_instruction.invoke_signed(signers)?;
+    transfer_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

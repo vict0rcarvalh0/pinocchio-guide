@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,12 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 9 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_withdraw_nonce_account(accounts, signers, lamports_to_withdraw)
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+    let lamports_to_withdraw = unsafe { *(data.as_ptr().add(1) as *const u64) };
+    process_withdraw_nonce_account(accounts, bump, lamports_to_withdraw)
 }
 
 /// Processes the `WithdrawNonceAccount` instruction.
@@ -38,7 +40,7 @@ pub fn process_instruction(
 /// 4. `[SIGNER]` The Nonce authority.
 pub fn process_withdraw_nonce_account<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer],          // The signers array required to authorize the transaction.
+    bump: [u8; 1],
     lamports_to_withdraw: u64,   // The amount of lamports to withdraw.
 ) -> ProgramResult {
     // Extracting account information
@@ -62,8 +64,10 @@ pub fn process_withdraw_nonce_account<'a>(
         lamports: lamports_to_withdraw,
     };
 
+    let seeds = [Seed::from(b"nonce_authority"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
     // Invoking the instruction
-    withdraw_nonce_instruction.invoke_signed(signers)?;
+    withdraw_nonce_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

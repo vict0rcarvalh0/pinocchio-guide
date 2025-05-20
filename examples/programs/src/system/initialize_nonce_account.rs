@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,12 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 33 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_initialize_nonce_account(accounts, authority, signers)
+    let authority = unsafe { *(data.as_ptr() as *const Pubkey) };
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(32) as *const [u8; 1]) };
+    process_initialize_nonce_account(accounts, &authority, bump)
 }
 
 /// Processes the `InitializeNonceAccount` instruction.
@@ -37,7 +39,7 @@ pub fn process_instruction(
 pub fn process_initialize_nonce_account<'a>(
     accounts: &'a [AccountInfo],
     authority: &'a Pubkey,   // Pubkey representing the entity authorized to interact with the nonce account.
-    signers: &[Signer],      // Signers array needed to authorize the transaction.
+    bump: [u8; 1],
 ) -> ProgramResult {
     // Extracting account information
     let [nonce_account, recent_blockhashes_sysvar, rent_sysvar] = accounts else {
@@ -55,8 +57,11 @@ pub fn process_initialize_nonce_account<'a>(
         authority,
     };
 
+    let seeds = [Seed::from(b"nonce_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    initialize_nonce_account_instruction.invoke_signed(signers)?;
+    initialize_nonce_account_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

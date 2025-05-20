@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,14 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 42 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_create_account(accounts, lamports, space, owner, signers)
+    let lamports = unsafe { *(data.as_ptr() as *const u64) };
+    let space = unsafe { *(data.as_ptr().add(8) as *const u64) };
+    let owner = unsafe { *(data.as_ptr().add(16) as *const Pubkey) };
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(48) as *const [u8; 1]) };
+    process_create_account(accounts, lamports, space, &owner, bump)
 }
 
 /// Processes the `CreateAccount` instruction.
@@ -40,7 +44,7 @@ pub fn process_create_account<'a>(
     lamports: u64,   // Number of lamports to transfer to the new account.
     space: u64,      // Number of bytes to allocate for the new account.
     owner: &Pubkey,  // Pubkey of the program that will own the new account.
-    signers: &[Signer],
+    bump: [u8; 1],
 ) -> ProgramResult {
     // Extracting account information
     let [funding_account, new_account] = accounts else {
@@ -59,8 +63,11 @@ pub fn process_create_account<'a>(
         owner,
     };
 
+    let seeds = [Seed::from(b"funding_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    create_account_instruction.invoke_signed(signers)?;
+    create_account_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

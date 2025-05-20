@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,22 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 41 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_transfer_with_seed(accounts, lamports, seed, owner, signers)
+    let lamports = unsafe { *(data.as_ptr() as *const u64) };
+    let seed_len = unsafe { *(data.as_ptr().add(8) as *const u8) } as usize;
+    if data.len() < 9 + seed_len + 32 + 1 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    let seed = unsafe {
+        std::str::from_utf8_unchecked(&data[9..9 + seed_len])
+    };
+    let owner_offset = 9 + seed_len;
+    let owner = unsafe { *(data.as_ptr().add(owner_offset) as *const Pubkey) };
+    let bump_offset = owner_offset + 32;
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(bump_offset) as *const [u8; 1]) };
+    process_transfer_with_seed(accounts, lamports, seed, &owner, bump)
 }
 
 /// Processes the `TransferWithSeed` instruction.
@@ -41,7 +53,7 @@ pub fn process_transfer_with_seed<'a>(
     lamports: u64,        //  The amount of lamports to transfer.
     seed: &'a str,        // The seed used to derive the address of the funding account.
     owner: &'a Pubkey,    // The address of the program that will own the new account.
-    signers: &[Signer],   // The signers array needed to authorize the transaction.
+    bump: [u8; 1],        // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Extracting account information
     let [from_account, base_account, to_account] = accounts else {
@@ -67,8 +79,11 @@ pub fn process_transfer_with_seed<'a>(
         owner,
     };
 
+    let seeds = [Seed::from(b"seed"), Seed::from(&bump)];
+    let signers = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    transfer_instruction.invoke_signed(signers)?;
+    transfer_instruction.invoke_signed(&signers)?;
 
     Ok(())
 }
