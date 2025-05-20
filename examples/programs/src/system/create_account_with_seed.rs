@@ -2,7 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult
 };
@@ -17,10 +17,25 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 41 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_create_account_with_seed(accounts, seed, lamports, space, owner, signers)
+    let seed_len = unsafe { *(data.as_ptr() as *const u8) } as usize;
+    if data.len() < 1 + seed_len + 8 + 8 + 32 + 1 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    let seed = unsafe {
+        std::str::from_utf8_unchecked(&data[1..1 + seed_len])
+    };
+    let lamports_offset = 1 + seed_len;
+    let lamports = unsafe { *(data.as_ptr().add(lamports_offset) as *const u64) };
+    let space_offset = lamports_offset + 8;
+    let space = unsafe { *(data.as_ptr().add(space_offset) as *const u64) };
+    let owner_offset = space_offset + 8;
+    let owner = unsafe { *(data.as_ptr().add(owner_offset) as *const Pubkey) };
+    let bump_offset = owner_offset + 32;
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(bump_offset) as *const [u8; 1]) };
+    process_create_account_with_seed(accounts, seed, lamports, space, &owner, bump)
 }
 
 /// Processes the `CreateAccountWithSeed` instruction.
@@ -43,7 +58,7 @@ pub fn process_create_account_with_seed<'a>(
     lamports: u64,      // Number of lamports to transfer to the new account.
     space: u64,         // Number of bytes to allocate for the new account.
     owner: &Pubkey,     // Pubkey of the program that will own the new account.
-    signers: &[Signer],
+    bump: [u8; 1],
 ) -> ProgramResult {
     // Extracting account information
     let [funding_account, new_account, base_account] = accounts else {
@@ -57,15 +72,17 @@ pub fn process_create_account_with_seed<'a>(
     let create_account_with_seed_instruction = CreateAccountWithSeed {
         from: funding_account,
         to: new_account,
-        base: base_account,
+        base: Some(base_account),
         seed,
         lamports,
         space,
         owner,
     };
 
+    let seeds = [Seed::from(b"funding_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
     // Invoking the instruction
-    create_account_with_seed_instruction.invoke_signed(signers)?;
+    create_account_with_seed_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

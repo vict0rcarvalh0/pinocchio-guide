@@ -1,5 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint, instruction::Signer, program_error::ProgramError, pubkey::{self, Pubkey}, ProgramResult
+    account_info::AccountInfo, 
+    entrypoint, 
+    instruction::{Signer, Seed}, 
+    program_error::ProgramError, 
+    pubkey::{self, Pubkey}, 
+    ProgramResult
 };
 
 use pinocchio_system::instructions::AllocateWithSeed;
@@ -11,27 +16,34 @@ pub fn process_instruction(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],
     data: &[u8],
-    owner: &Pubkey,
-    signers: &[Signer],
 ) -> ProgramResult {
-    if data.len() < 9 {
+    if data.len() < 10 {
         return Err(ProgramError::InvalidInstructionData);
     }
 
-    // Extract `seed` length and `seed` string
-    let seed_len = unsafe { *(data.as_ptr().add(0) as *const u8) } as usize;
-    if data.len() < 1 + seed_len + 8 {
+    // Extract `seed` length (u8) and the `seed` string
+    let seed_len = unsafe { *(data.as_ptr() as *const u8) } as usize;
+    if data.len() < 1 + seed_len + 8 + 32 + 1 {
         return Err(ProgramError::InvalidInstructionData);
     }
     let seed = unsafe {
         std::str::from_utf8_unchecked(&data[1..1 + seed_len])
     };
 
-    // Extract `space` (u64)
-    let space = unsafe { *(data.as_ptr().add(1 + seed_len) as *const u64) };
+    // Extract `space` (u64) from the next 8 bytes after the seed
+    let space_offset = 1 + seed_len;
+    let space = unsafe { *(data.as_ptr().add(space_offset) as *const u64) };
+
+    // Extract `owner` (Pubkey) from the next 32 bytes after `space`
+    let owner_offset = space_offset + 8;
+    let owner = unsafe { *(data.as_ptr().add(owner_offset) as *const Pubkey) };
+
+    // Extract `bump` ([u8; 1]) from the last byte
+    let bump_offset = owner_offset + 32;
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(bump_offset) as *const [u8; 1]) };
 
     // Call `process_allocate_with_seed` with the new parameters
-    process_allocate_with_seed(accounts, seed, space, owner, signers)
+    process_allocate_with_seed(accounts, seed, space, &owner, bump)
 }
 
 /// Processes the `AllocateWithSeed` instruction.
@@ -51,7 +63,7 @@ pub fn process_allocate_with_seed<'a>(
     seed: &str,            // String used along with the base public key to derive the allocated account's address.
     space: u64,            // The number of bytes to allocate for the account.
     owner: &Pubkey,        // The program that will own the allocated account.
-    signers: &[Signer],
+    bump: [u8; 1],
 ) -> ProgramResult {
     // Extracting account information
     let [allocated_account, base_account] = accounts else {
@@ -73,8 +85,10 @@ pub fn process_allocate_with_seed<'a>(
         owner,
     };
 
+    let seeds = [Seed::from(b"base_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
     // Invoking the instruction
-    allocate_with_seed_instruction.invoke_signed(signers)?;
+    allocate_with_seed_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

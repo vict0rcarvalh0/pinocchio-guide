@@ -1,5 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint, instruction::Signer, program_error::ProgramError, pubkey::{self, Pubkey}, ProgramResult
+    account_info::AccountInfo, 
+    entrypoint, 
+    instruction::{Signer, Seed}, 
+    program_error::ProgramError, 
+    pubkey::{self, Pubkey}, 
+    ProgramResult
 };
 
 use pinocchio_system::instructions::AssignWithSeed;
@@ -12,10 +17,21 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
-    if data.len() < 8 {
+    if data.len() < 10 {
         return Err(ProgramError::InvalidInstructionData);
     }
-    process_assign_with_seed(accounts, seed, owner, signers)
+    let seed_len = unsafe { *(data.as_ptr() as *const u8) } as usize;
+    if data.len() < 1 + seed_len + 32 + 1 {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    let seed = unsafe {
+        std::str::from_utf8_unchecked(&data[1..1 + seed_len])
+    };
+    let owner_offset = 1 + seed_len;
+    let owner = unsafe { *(data.as_ptr().add(owner_offset) as *const Pubkey) };
+    let bump_offset = owner_offset + 32;
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(bump_offset) as *const [u8; 1]) };
+    process_assign_with_seed(accounts, seed, &owner, bump)
 }
 
 /// Processes the `AssignWithSeed` instruction.
@@ -33,7 +49,7 @@ pub fn process_assign_with_seed<'a>(
     accounts: &'a [AccountInfo],
     seed: &str,
     owner: &Pubkey,
-    signers: &[Signer],
+    bump: [u8; 1],
 ) -> ProgramResult {
     // Extracting account information
     let [assigned_account, base_account] = accounts else {
@@ -54,8 +70,11 @@ pub fn process_assign_with_seed<'a>(
         owner,
     };
 
+    let seeds = [Seed::from(b"base_account"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoking the instruction
-    assign_with_seed_instruction.invoke_signed(signers)?;
+    assign_with_seed_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }
