@@ -2,9 +2,7 @@
 
 ## Introduction
 
-The Pinocchio Guide is your go-to resource for understanding and implementing core account management functionalities within the Solana blockchain. This guide emphasizes foundational principles, code-level explanations, and best practices to empower developers in leveraging Solana’s unique system of transaction optimization.
-
-Pinocchio simplifies advanced blockchain programming by offering a robust and optimized framework for system-level operations.
+The Pinocchio Guide serves as a comprehensive resource for understanding and implementing core account management functionalities on the Solana blockchain. It emphasizes foundational principles, code-level explanations, and best practices to help developers fully leverage Solana's unique transaction optimization system.
 
 This documentation focuses on showing examples of instruction calls, detailing its structure and usage to enhance your development experience.
 
