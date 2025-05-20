@@ -15,12 +15,10 @@ use token::*;
 // #[cfg(feature = "allocate")]
 // use allocate::*;
 
-
 // #[cfg(feature = "allocate_with_seed")]
 // mod allocate_with_seed;
 // #[cfg(feature = "allocate_with_seed")]
 // use allocate_with_seed::*;
-
 
 // #[cfg(feature = "assign")]
 // mod assign;
@@ -138,10 +136,10 @@ use token::*;
 // #[cfg(feature = "thaw_account")]
 // use thaw_account::*;
 
-#[cfg(feature = "transfer_tokens")]
-mod transfer_tokens;
-#[cfg(feature = "transfer_tokens")]
-use transfer_tokens::*;
+// #[cfg(feature = "transfer_tokens")]
+// mod transfer_tokens;
+// #[cfg(feature = "transfer_tokens")]
+// use transfer_tokens::*;
 
 // #[cfg(feature = "transfer_checked")]
 // mod transfer_checked;

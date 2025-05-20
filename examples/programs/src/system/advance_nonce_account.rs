@@ -9,7 +9,7 @@ use pinocchio::{
 use pinocchio_system::instructions::AdvanceNonceAccount;
 
 // A constant representing the program ID, decoded from a base58 string.
-const ID: [u8; 32] = five8_const::decode_32_const("77777777777777777777777777777777777777777777");
+// const ID: [u8; 32] = five8_const::decode_32_const("77777777777777777777777777777777777777777777");
 
 // Macro to define the program's entry point.
 entrypoint!(process_instruction);

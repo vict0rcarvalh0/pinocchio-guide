@@ -2,16 +2,15 @@ use pinocchio::{
     account_info::AccountInfo,
     entrypoint,
     program_error::ProgramError,
-    instruction::Signer,
+    instruction::{Signer, Seed},
     pubkey::Pubkey,
     ProgramResult,
 };
 
 use pinocchio_token::instructions::InitializeAccount;
-use spl_token::solana_program::sysvar;
 
 // A constant representing the program ID, decoded from a base58 string.
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+// const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 
 // Macro to define the program's entry point.
 entrypoint!(process_instruction);
@@ -35,8 +34,11 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidInstructionData);
     }
 
+    // Extract the bump seed from the data.
+    let bump: [u8; 1] = unsafe { *(data.as_ptr().add(0) as *const [u8; 1]) };
+
     // Process the InitializeAccount instruction.
-    process_initialize_account(accounts, signer)
+    process_initialize_account(accounts, bump)
 }
 
 /// Processes the `InitializeAccount` instruction.
@@ -58,7 +60,7 @@ pub fn process_instruction(
 /// - `ProgramResult`: Indicates success or failure of the instruction processing.
 pub fn process_initialize_account<'a>(
     accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    bump: [u8; 1], // The signers array needed to authorize the transaction.
 ) -> ProgramResult {
     // Destructure the accounts array into individual accounts.
     let [account_to_initialize, mint_account, owner_account, rent_sysvar] = accounts else {
@@ -70,7 +72,7 @@ pub fn process_initialize_account<'a>(
     assert!(account_to_initialize.is_writable());
 
     // Ensure the rent sysvar is valid by checking its key.
-    assert_eq!(rent_sysvar.key(), &spl_token::solana_program::sysvar::rent::ID);
+    // assert_eq!(rent_sysvar.key(), &spl_token::solana_program::sysvar::rent::ID);
 
     // Construct the `InitializeAccount` instruction.
     let initialize_account_instruction = InitializeAccount {
@@ -80,8 +82,11 @@ pub fn process_initialize_account<'a>(
         rent_sysvar,
     };
 
+    let seeds = [Seed::from(b"freeze_authority"), Seed::from(&bump)];
+    let signer = [Signer::from(&seeds)];
+
     // Invoke the instruction with the provided signers.
-    initialize_account_instruction.invoke_signed(signers)?;
+    initialize_account_instruction.invoke_signed(&signer)?;
 
     Ok(())
 }

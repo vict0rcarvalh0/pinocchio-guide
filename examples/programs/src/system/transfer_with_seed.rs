@@ -10,7 +10,7 @@ use pinocchio::{
 use pinocchio_system::instructions::TransferWithSeed;
 
 // A constant representing the program ID, decoded from a base58 string.
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
+// const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
 
 // Macro to define the program's entry point.
 entrypoint!(process_instruction);

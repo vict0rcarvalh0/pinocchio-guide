@@ -1,7 +1,6 @@
 # Pinocchio Tutorial
 ## Introduction
 
-
 This tutorial demonstrates how to transform an Anchor Vault into a Pinocchio Vault on Solana. A vault is an essential construct in decentralized applications (dApps), enabling the deposit and withdrawal of tokens (fungible or non-fungible). Vaults are often foundational for mechanisms like NFT staking, token staking, and escrow systems.
 
 ### Why Pinocchio Over Anchor?
