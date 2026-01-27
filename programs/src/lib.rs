@@ -1,149 +1,71 @@
-mod system;
-use system::*;
+pub mod system;
+pub mod token;
 
-mod token;
-use token::*;
+use pinocchio::{
+    entrypoint,
+    error::ProgramError,
+    AccountView,
+    Address,
+    ProgramResult,
+};
 
-// /// System Program Instructions
-// #[cfg(feature = "advance_nonce_account")]
-// mod advance_nonce_account;
-// #[cfg(feature = "advance_nonce_account")]
-// use advance_nonce_account::*;
+// Instruction discriminators
+const SYSTEM_ASSIGN: u8 = 0;
+const SYSTEM_TRANSFER: u8 = 1;
+const SYSTEM_CREATE_ACCOUNT: u8 = 2;
+const SYSTEM_ALLOCATE: u8 = 3;
+const SYSTEM_ALLOCATE_WITH_SEED: u8 = 4;
+const SYSTEM_ASSIGN_WITH_SEED: u8 = 5;
+const SYSTEM_CREATE_ACCOUNT_WITH_SEED: u8 = 6;
+const SYSTEM_ADVANCE_NONCE: u8 = 7;
+const SYSTEM_WITHDRAW_NONCE: u8 = 8;
+const SYSTEM_INIT_NONCE: u8 = 9;
+const SYSTEM_AUTHORIZE_NONCE: u8 = 10;
+const SYSTEM_TRANSFER_WITH_SEED: u8 = 11;
+const SYSTEM_UPDATE_NONCE: u8 = 12;
 
-// #[cfg(feature = "allocate")]
-// mod allocate;
-// #[cfg(feature = "allocate")]
-// use allocate::*;
+const TOKEN_INIT_MINT: u8 = 20;
+const TOKEN_INIT_ACCOUNT: u8 = 21;
+const TOKEN_TRANSFER: u8 = 22;
+const TOKEN_APPROVE: u8 = 23;
+const TOKEN_REVOKE: u8 = 24;
+const TOKEN_SET_AUTHORITY: u8 = 25;
+const TOKEN_MINT_TO: u8 = 26;
+const TOKEN_BURN: u8 = 27;
+const TOKEN_CLOSE_ACCOUNT: u8 = 28;
+const TOKEN_FREEZE: u8 = 29;
+const TOKEN_THAW: u8 = 30;
+const TOKEN_TRANSFER_CHECKED: u8 = 31;
+const TOKEN_APPROVE_CHECKED: u8 = 32;
+const TOKEN_MINT_TO_CHECKED: u8 = 33;
+const TOKEN_BURN_CHECKED: u8 = 34;
+const TOKEN_SYNC_NATIVE: u8 = 35;
 
+entrypoint!(process_instruction);
 
-// #[cfg(feature = "allocate_with_seed")]
-// mod allocate_with_seed;
-// #[cfg(feature = "allocate_with_seed")]
-// use allocate_with_seed::*;
-
-
-// #[cfg(feature = "assign")]
-// mod assign;
-// #[cfg(feature = "assign")]
-// use assign::*;
-
-// #[cfg(feature = "assign_with_seed")]
-// mod assign_with_seed;
-// #[cfg(feature = "assign_with_seed")]
-// use assign_with_seed::*;
-
-// #[cfg(feature = "authorize_nonce_account")]
-// mod authorize_nonce_account;
-// #[cfg(feature = "authorize_nonce_account")]
-// use authorize_nonce_account::*;
-
-// #[cfg(feature = "create_account")]
-// mod create_account;
-// #[cfg(feature = "create_account")]
-// use create_account::*;
-
-// #[cfg(feature = "create_account_with_seed")]
-// mod create_account_with_seed;
-// #[cfg(feature = "create_account_with_seed")]
-// use create_account_with_seed::*;
-
-// #[cfg(feature = "initialize_nonce_account")]
-// mod initialize_nonce_account;
-// #[cfg(feature = "initialize_nonce_account")]
-// use initialize_nonce_account::*;
-
-// #[cfg(feature = "transfer_lamports")]
-// mod transfer_lamports;
-// #[cfg(feature = "transfer_lamports")]
-// use transfer_lamports::*;
-
-// #[cfg(feature = "transfer_with_seed")]
-// mod transfer_lamports;
-// #[cfg(feature = "transfer_with_seed")]
-// use transfer_lamports::*;
-
-// #[cfg(feature = "update_nonce_account")]
-// mod update_nonce_account;
-// #[cfg(feature = "update_nonce_account")]
-// use update_nonce_account::*;
-
-// #[cfg(feature = "withdraw_nonce_account")]
-// mod withdraw_nonce_account;
-// #[cfg(feature = "withdraw_nonce_account")]
-// use withdraw_nonce_account::*;
-
-// /// SPL Token Instructions
-// #[cfg(feature = "approve")]
-// mod approve;
-// #[cfg(feature = "approve")]
-// use approve::*;
-
-// #[cfg(feature = "approve_checked")]
-// mod approve_checked;
-// #[cfg(feature = "approve_checked")]
-// use approve_checked::*;
-
-// #[cfg(feature = "burn")]
-// mod burn;
-// #[cfg(feature = "burn")]
-// use burn::*;
-
-// #[cfg(feature = "burn_checked")]
-// mod burn_checked;
-// #[cfg(feature = "burn_checked")]
-// use burn_checked::*;
-
-// #[cfg(feature = "close_account")]
-// mod close_account;
-// #[cfg(feature = "close_account")]
-// use close_account::*;
-
-// #[cfg(feature = "freeze_account")]
-// mod freeze_account;
-// #[cfg(feature = "freeze_account")]
-// use freeze_account::*;
-
-// #[cfg(feature = "initialize_account")]
-// mod initialize_account;
-// #[cfg(feature = "initialize_account")]
-// use initialize_account::*;
-
-// #[cfg(feature = "mint_to")]
-//mod mint_to;
-// #[cfg(feature = "mint_to")]
-//use mint_to::*;
-
-// #[cfg(feature = "mint_to_checked")]
-// mod mint_to_checked;
-// #[cfg(feature = "mint_to_checked")]
-// use mint_to_checked::*;
-
-// #[cfg(feature = "revoke")]
-// mod revoke;
-// #[cfg(feature = "revoke")]
-// use revoke::*;
-
-// #[cfg(feature = "set_authority")]
-// mod set_authority;
-// #[cfg(feature = "set_authority")]
-// use set_authority::*;
-
-// #[cfg(feature = "sync_native")]
-// mod sync_native;
-// #[cfg(feature = "sync_native")]
-// use sync_native::*;
-
-// #[cfg(feature = "thaw_account")]
-// mod thaw_account;
-// #[cfg(feature = "thaw_account")]
-// use thaw_account::*;
-
-#[cfg(feature = "transfer_tokens")]
-mod transfer_tokens;
-#[cfg(feature = "transfer_tokens")]
-use transfer_tokens::*;
-
-// #[cfg(feature = "transfer_checked")]
-// mod transfer_checked;
-// #[cfg(feature = "transfer_checked")]
-// use transfer_checked::*;
+pub fn process_instruction(
+    _program_id: &Address,
+    _accounts: &[AccountView],
+    instruction_data: &[u8],
+) -> ProgramResult {
+    if instruction_data.is_empty() {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+    
+    let discriminator = instruction_data[0];
+    
+    match discriminator {
+        // System instructions
+        SYSTEM_ASSIGN | SYSTEM_TRANSFER | SYSTEM_CREATE_ACCOUNT | SYSTEM_ALLOCATE |
+        SYSTEM_ALLOCATE_WITH_SEED | SYSTEM_ASSIGN_WITH_SEED | SYSTEM_CREATE_ACCOUNT_WITH_SEED |
+        SYSTEM_ADVANCE_NONCE | SYSTEM_WITHDRAW_NONCE | SYSTEM_INIT_NONCE |
+        SYSTEM_AUTHORIZE_NONCE | SYSTEM_TRANSFER_WITH_SEED | SYSTEM_UPDATE_NONCE => Ok(()),
+        // Token instructions
+        TOKEN_INIT_MINT | TOKEN_INIT_ACCOUNT | TOKEN_TRANSFER | TOKEN_APPROVE |
+        TOKEN_REVOKE | TOKEN_SET_AUTHORITY | TOKEN_MINT_TO | TOKEN_BURN |
+        TOKEN_CLOSE_ACCOUNT | TOKEN_FREEZE | TOKEN_THAW | TOKEN_TRANSFER_CHECKED |
+        TOKEN_APPROVE_CHECKED | TOKEN_MINT_TO_CHECKED | TOKEN_BURN_CHECKED |
+        TOKEN_SYNC_NATIVE => Ok(()),
+        _ => Err(ProgramError::InvalidInstructionData),
+    }
+}

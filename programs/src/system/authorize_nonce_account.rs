@@ -1,27 +1,11 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    pubkey::Pubkey,
-    ProgramResult
+    AccountView,
+    Address,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_system::instructions::AuthorizeNonceAccount;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_authorize_nonce_account(accounts, new_authority, signers)
-}
 
 /// Processes the `AuthorizeNonceAccount` instruction.
 ///
@@ -34,17 +18,18 @@ pub fn process_instruction(
 /// 0. `[WRITE]` The Nonce account.
 /// 1. `[SIGNER]` The current Nonce authority.
 pub fn process_authorize_nonce_account<'a>(
-    accounts: &'a [AccountInfo],
-    new_authority: &Pubkey,  // Pubkey of the new entity to be authorized to execute nonce instructions on the account.
+    accounts: &'a [AccountView],
+    new_authority: &Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [nonce_account, nonce_authority] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure the nonce authority is a signer
-    assert!(nonce_authority.is_signer());
+    if !nonce_authority.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Creating the instruction instance
     let authorize_nonce_instruction = AuthorizeNonceAccount {
@@ -54,7 +39,59 @@ pub fn process_authorize_nonce_account<'a>(
     };
 
     // Invoking the instruction
-    authorize_nonce_instruction.invoke_signed(signers)?;
+    authorize_nonce_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_sdk_ids::system_program;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+        };
+
+    #[test]
+    fn test_authorize_nonce_account() {
+        let program_id = Pubkey::new_unique();
+        let mollusk = Mollusk::new(&program_id, "programs");
+
+        let nonce_account = Pubkey::new_unique();
+        let nonce_authority = Pubkey::new_unique();
+        let new_authority = Pubkey::new_unique();
+
+        // Discriminator 10
+        let mut instruction_data = vec![10u8];
+        instruction_data.extend_from_slice(new_authority.as_ref());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &instruction_data,
+            vec![
+                AccountMeta::new(nonce_account, false),
+                AccountMeta::new_readonly(nonce_authority, true),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (
+                    nonce_account,
+                    Account::new(
+                        mollusk.sysvars.rent.minimum_balance(80),
+                        80,
+                        &system_program::id(),
+                    ),
+                ),
+                (
+                    nonce_authority,
+                    Account::new(1_000_000_000, 0, &system_program::id()),
+                ),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

@@ -1,27 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    pubkey::Pubkey,
+    AccountView,
+    Address,
+    error::ProgramError,
     ProgramResult,
 };
-
 use pinocchio_token::instructions::InitializeMint;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_initialize_mint(accounts, decimals, mint_authority, freeze_authority, signers)
-}
 
 /// Processes the InitializeMint instruction.
 ///
@@ -30,28 +13,24 @@ pub fn process_instruction(
 /// - `decimals`: Number of decimals for the token.
 /// - `mint_authority`: The public key of the mint authority.
 /// - `freeze_authority`: An optional public key for the freeze authority.
-/// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
 ///   0. `[WRITABLE]` Mint account.
 ///   1. `[]` Rent sysvar.
 pub fn process_initialize_mint<'a>(
-    accounts: &'a [AccountInfo],
-    decimals: u8,                   // Decimals for the mint.
-    mint_authority: &Pubkey,        // Public key of the mint authority.
-    freeze_authority: Option<&Pubkey>, // Optional public key of the freeze authority.
-    signers: &[Signer],             // The signers array needed to authorize the transaction.
+    accounts: &'a [AccountView],
+    decimals: u8,
+    mint_authority: &Address,
+    freeze_authority: Option<&Address>,
 ) -> ProgramResult {
-    // Extracting account information
     let [mint_account, rent_sysvar] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure the mint account is writable
-    assert!(mint_account.is_writable());
-
-    // Ensure the rent sysvar is valid (you might need additional checks here)
-    assert!(rent_sysvar.key() != &solana_program::sysvar::rent::ID);
+    if !mint_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Creating the instruction instance
     let initialize_mint_instruction = InitializeMint {
@@ -62,8 +41,65 @@ pub fn process_initialize_mint<'a>(
         freeze_authority,
     };
 
-    // Invoking the instruction
-    initialize_mint_instruction.invoke_signed(signers)?;
+    // Invoking the instruction (no signers needed for initialize)
+    initialize_mint_instruction.invoke()
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_program_pack::Pack;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+        sysvar,
+    };
+
+    #[test]
+    fn test_initialize_mint() {
+        let program_id = Pubkey::new_unique();
+        let (token_program, token_program_account) =
+            mollusk_svm_programs_token::token::keyed_account();
+
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        mollusk_svm_programs_token::token::add_program(&mut mollusk);
+
+        let mint_pubkey = Pubkey::new_unique();
+        let mint_authority = Pubkey::new_unique();
+
+        let mint_account = Account::new(
+            mollusk.sysvars.rent.minimum_balance(spl_token::state::Mint::LEN),
+            spl_token::state::Mint::LEN,
+            &spl_token::id(),
+        );
+
+        let decimals: u8 = 9;
+
+        let mut data = Vec::new();
+        data.push(decimals);
+        data.extend_from_slice(mint_authority.as_ref());
+        data.push(0); // No freeze authority
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &data,
+            vec![
+                AccountMeta::new(mint_pubkey, false),
+                AccountMeta::new_readonly(sysvar::rent::ID, false),
+                AccountMeta::new_readonly(token_program, false),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (mint_pubkey, mint_account),
+                (sysvar::rent::ID, mollusk.sysvars.keyed_account_for_rent_sysvar().1),
+                (token_program, token_program_account),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

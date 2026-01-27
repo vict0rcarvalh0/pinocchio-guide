@@ -1,53 +1,42 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    instruction::Signer,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    ProgramResult
+    AccountView,
+    Address,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_token::instructions::{AuthorityType, SetAuthority};
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_set_authority(accounts, authority_type, new_authority, signers)
-}
 
 /// Processes the SetAuthority instruction.
 ///
-/// ### Accounts:
+/// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
+/// - `authority_type`: The type of authority to update.
+/// - `new_authority`: Optional new authority.
 /// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
 ///   0. `[WRITE]` The mint or account to change the authority of.
 ///   1. `[SIGNER]` The current authority of the mint or account.
 pub fn process_set_authority<'a>(
-    accounts: &'a [AccountInfo],
+    accounts: &'a [AccountView],
     authority_type: AuthorityType,
-    new_authority: Option<&Pubkey>, // Optional new authority
+    new_authority: Option<&Address>,
     signers: &[Signer],
 ) -> ProgramResult {
-    // Extract account information
     let [account_to_update, current_authority] = accounts else {
-        return Err(ProgramError::NotEnoughAccountKeys)
+        return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure the account to update is writable
-    assert!(account_to_update.is_writable());
+    if !account_to_update.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Ensure the current authority account is a signer
-    assert!(current_authority.is_signer());
+    if !current_authority.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Create the instruction instance
     let set_authority_instruction = SetAuthority {
@@ -58,7 +47,75 @@ pub fn process_set_authority<'a>(
     };
 
     // Invoke the instruction
-    set_authority_instruction.invoke_signed(signers)?;
+    set_authority_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_program_pack::Pack;
+    use solana_sdk::{
+        account::{Account, WritableAccount},
+        instruction::{AccountMeta, Instruction},
+        program_option::COption,
+        pubkey::Pubkey,
+    };
+
+    #[test]
+    fn test_set_authority() {
+        let program_id = Pubkey::new_unique();
+        let (token_program, token_program_account) =
+            mollusk_svm_programs_token::token::keyed_account();
+
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        mollusk_svm_programs_token::token::add_program(&mut mollusk);
+
+        let mint_pubkey = Pubkey::new_unique();
+        let current_authority = Pubkey::new_unique();
+        let new_authority = Pubkey::new_unique();
+
+        let mut mint_account =
+            Account::new(1_000_000_000, spl_token::state::Mint::LEN, &spl_token::id());
+        spl_token::state::Mint {
+            mint_authority: COption::Some(current_authority),
+            supply: 1_000_000,
+            decimals: 9,
+            is_initialized: true,
+            freeze_authority: COption::None,
+        }
+        .pack_into_slice(mint_account.data_as_mut_slice());
+
+        // SetAuthority instruction data format:
+        // [0]: authority_type (0 = MintTokens)
+        // [1]: option flag (1 = Some)
+        // [2..34]: new_authority pubkey
+        let mut data = Vec::new();
+        data.push(0); // MintTokens authority type
+        data.push(1); // Some
+        data.extend_from_slice(new_authority.as_ref());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &data,
+            vec![
+                AccountMeta::new(mint_pubkey, false),
+                AccountMeta::new_readonly(current_authority, true),
+                AccountMeta::new_readonly(token_program, false),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (mint_pubkey, mint_account),
+                (
+                    current_authority,
+                    Account::new(1_000_000_000, 0, &Pubkey::default()),
+                ),
+                (token_program, token_program_account),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

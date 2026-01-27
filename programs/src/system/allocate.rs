@@ -1,26 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    ProgramResult
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_system::instructions::Allocate;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_allocate(accounts, space, signers)
-}
 
 /// Processes the `Allocate` instruction.
 ///
@@ -32,17 +16,18 @@ pub fn process_instruction(
 /// ### Accounts:
 /// 0. `[WRITE, SIGNER]` The account to allocate space for.
 pub fn process_allocate<'a>(
-    accounts: &'a [AccountInfo],
-    space: u64,                       // Determines how many bytes of memory are allocated for the account.
+    accounts: &'a [AccountView],
+    space: u64,
     signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [allocate_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure the allocate account is a signer
-    assert!(allocate_account.is_signer());
+    if !allocate_account.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Creating the instruction instance
     let allocate_instruction = Allocate {
@@ -51,7 +36,45 @@ pub fn process_allocate<'a>(
     };
 
     // Invoking the instruction
-    allocate_instruction.invoke_signed(signers)?;
+    allocate_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_sdk_ids::system_program;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+    };
+
+    #[test]
+    fn test_allocate() {
+        let program_id = Pubkey::new_unique();
+        let mollusk = Mollusk::new(&program_id, "programs");
+
+        let allocate_account = Pubkey::new_unique();
+        let space: u64 = 100;
+
+        // Discriminator 3 = SYSTEM_ALLOCATE
+        let mut data = vec![3u8];
+        data.extend_from_slice(&space.to_le_bytes());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &data,
+            vec![AccountMeta::new(allocate_account, true)],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![(
+                allocate_account,
+                Account::new(1_000_000_000, 0, &system_program::ID),
+            )],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

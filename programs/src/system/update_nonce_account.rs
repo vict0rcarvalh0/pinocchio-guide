@@ -1,54 +1,71 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    ProgramResult
+    AccountView,
+    error::ProgramError,
+    ProgramResult,
 };
+use pinocchio_system::instructions::UpgradeNonceAccount;
 
-use pinocchio_system::instructions::UpdateNonceAccount;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_update_nonce_account(accounts, signers)
-}
-
-/// Processes the `UpdateNonceAccount` instruction.
+/// Processes the `UpgradeNonceAccount` instruction.
 ///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
-/// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
 /// 0. `[WRITE]` The Nonce account.
-pub fn process_update_nonce_account<'a>(
-    accounts: &'a [AccountInfo],
-    signers: &[Signer],  // The signers array needed to authorize the transaction.
-) -> ProgramResult {
-    // Extracting account information
+pub fn process_update_nonce_account<'a>(accounts: &'a [AccountView]) -> ProgramResult {
     let [nonce_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure that the 'nonce_account' is writable
-    assert!(nonce_account.is_writable());
+    if !nonce_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Creating the instruction instance
-    let update_nonce_instruction = UpdateNonceAccount {
+    let update_nonce_instruction = UpgradeNonceAccount {
         account: nonce_account,
     };
 
     // Invoking the instruction
-    update_nonce_instruction.invoke_signed(signers)?;
+    update_nonce_instruction.invoke()
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_sdk_ids::system_program;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+        };
+
+    #[test]
+    fn test_update_nonce_account() {
+        let program_id = Pubkey::new_unique();
+        let mollusk = Mollusk::new(&program_id, "programs");
+
+        let nonce_account = Pubkey::new_unique();
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &[12u8, 12u8],
+            vec![AccountMeta::new(nonce_account, false)],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![(
+                nonce_account,
+                Account::new(
+                    mollusk.sysvars.rent.minimum_balance(80),
+                    80,
+                    &system_program::id(),
+                ),
+            )],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

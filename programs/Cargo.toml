@@ -30,6 +30,7 @@ burn_checked = []
 close_account = []
 freeze_account = []
 initialize_account = []
+initialize_mint = []
 mint_to = []
 mint_to_checked = []
 revoke = []
@@ -41,15 +42,15 @@ transfer_checked = []
 
 [dependencies]
 pinocchio = { workspace = true }
-pinocchio-pubkey = { workspace = true }
 pinocchio-system = { workspace = true }
 pinocchio-token = { workspace = true }
 five8_const = { workspace = true }
-spl-token = { workspace = true }
 
 [dev-dependencies]
 solana-sdk = { workspace = true }
 solana-program = { workspace = true }
+solana-sdk-ids = { workspace = true }
+solana-program-pack = { workspace = true }
 mollusk-svm = { workspace = true }
-mollusk-token = { workspace = true }
+mollusk-svm-programs-token = { workspace = true }
 spl-token = { workspace = true }

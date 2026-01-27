@@ -1,26 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    ProgramResult
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_token::instructions::CloseAccount;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_close_account(accounts, signers)
-}
 
 /// Processes the CloseAccount instruction.
 ///
@@ -33,22 +17,27 @@ pub fn process_instruction(
 ///   1. `[WRITE]` The destination account.
 ///   2. `[SIGNER]` The account's owner.
 pub fn process_close_account<'a>(
-    accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    accounts: &'a [AccountView],
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [close_account, destination_account, authority_account] = accounts else {
-        return Err(ProgramError::NotEnoughAccountKeys) 
+        return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure that the 'close' account is writable
-    assert!(close_account.is_writable());
+    if !close_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Ensure that the 'destination' account is writable
-    assert!(destination_account.is_writable());
+    if !destination_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Ensure that the 'authority' account is a signer
-    assert!(authority_account.is_signer());
+    if !authority_account.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Creating the instruction instance
     let close_account_instruction = CloseAccount {
@@ -58,7 +47,76 @@ pub fn process_close_account<'a>(
     };
 
     // Invoking the instruction
-    close_account_instruction.invoke_signed(signers)?;
+    close_account_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_program_pack::Pack;
+    use solana_sdk::{
+        account::{Account, WritableAccount},
+        instruction::{AccountMeta, Instruction},
+        program_option::COption,
+        pubkey::Pubkey,
+    };
+    use spl_token::state::AccountState;
+
+    #[test]
+    fn test_close_account() {
+        let program_id = Pubkey::new_unique();
+        let (token_program, token_program_account) =
+            mollusk_svm_programs_token::token::keyed_account();
+
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        mollusk_svm_programs_token::token::add_program(&mut mollusk);
+
+        let mint = Pubkey::new_unique();
+        let owner = Pubkey::new_unique();
+        let close_account_pubkey = Pubkey::new_unique();
+        let destination = Pubkey::new_unique();
+
+        let mut close_account =
+            Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
+        spl_token::state::Account {
+            mint,
+            owner,
+            amount: 0, // Must be 0 to close
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        }
+        .pack_into_slice(close_account.data_as_mut_slice());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &[28u8, 28u8],
+            vec![
+                AccountMeta::new(close_account_pubkey, false),
+                AccountMeta::new(destination, false),
+                AccountMeta::new_readonly(owner, true),
+                AccountMeta::new_readonly(token_program, false),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (close_account_pubkey, close_account),
+                (
+                    destination,
+                    Account::new(1_000_000_000, 0, &Pubkey::default()),
+                ),
+                (
+                    owner,
+                    Account::new(1_000_000_000, 0, &Pubkey::default()),
+                ),
+                (token_program, token_program_account),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

@@ -1,26 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    ProgramResult
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_token::instructions::FreezeAccount;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_freeze_account(accounts, signers)
-}
 
 /// Processes the FreezeAccount instruction.
 ///
@@ -33,19 +17,22 @@ pub fn process_instruction(
 ///   1. `[]` The token mint.
 ///   2. `[SIGNER]` The mint freeze authority.
 pub fn process_freeze_account<'a>(
-    accounts: &'a [AccountInfo],
-    signers: &[Signer], // The signers array needed to authorize the transaction.
+    accounts: &'a [AccountView],
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [account_to_freeze, mint_account, freeze_authority] = accounts else {
-        return Err(ProgramError::NotEnoughAccountKeys)
+        return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure that the account to freeze is writable
-    assert!(account_to_freeze.is_writable());
+    if !account_to_freeze.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Ensure that the freeze authority is a signer
-    assert!(freeze_authority.is_signer());
+    if !freeze_authority.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Creating the instruction instance
     let freeze_account_instruction = FreezeAccount {
@@ -55,7 +42,84 @@ pub fn process_freeze_account<'a>(
     };
 
     // Invoking the instruction
-    freeze_account_instruction.invoke_signed(signers)?;
+    freeze_account_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_program_pack::Pack;
+    use solana_sdk::{
+        account::{Account, WritableAccount},
+        instruction::{AccountMeta, Instruction},
+        program_option::COption,
+        pubkey::Pubkey,
+    };
+    use spl_token::state::AccountState;
+
+    #[test]
+    fn test_freeze_account() {
+        let program_id = Pubkey::new_unique();
+        let (token_program, token_program_account) =
+            mollusk_svm_programs_token::token::keyed_account();
+
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        mollusk_svm_programs_token::token::add_program(&mut mollusk);
+
+        let mint_pubkey = Pubkey::new_unique();
+        let owner = Pubkey::new_unique();
+        let freeze_authority = Pubkey::new_unique();
+        let account_to_freeze_pubkey = Pubkey::new_unique();
+
+        let mut mint_account =
+            Account::new(1_000_000_000, spl_token::state::Mint::LEN, &spl_token::id());
+        spl_token::state::Mint {
+            mint_authority: COption::Some(owner),
+            supply: 1_000_000,
+            decimals: 9,
+            is_initialized: true,
+            freeze_authority: COption::Some(freeze_authority),
+        }
+        .pack_into_slice(mint_account.data_as_mut_slice());
+
+        let mut account_to_freeze =
+            Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
+        spl_token::state::Account {
+            mint: mint_pubkey,
+            owner,
+            amount: 1_000_000,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        }
+        .pack_into_slice(account_to_freeze.data_as_mut_slice());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &[29u8, 29u8],
+            vec![
+                AccountMeta::new(account_to_freeze_pubkey, false),
+                AccountMeta::new_readonly(mint_pubkey, false),
+                AccountMeta::new_readonly(freeze_authority, true),
+                AccountMeta::new_readonly(token_program, false),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (account_to_freeze_pubkey, account_to_freeze),
+                (mint_pubkey, mint_account),
+                (
+                    freeze_authority,
+                    Account::new(1_000_000_000, 0, &Pubkey::default()),
+                ),
+                (token_program, token_program_account),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

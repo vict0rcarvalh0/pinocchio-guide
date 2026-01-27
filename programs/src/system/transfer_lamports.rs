@@ -1,26 +1,10 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    ProgramResult
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_system::instructions::Transfer;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_transfer(accounts, lamports, signers)
-}
 
 /// Processes the `Transfer` instruction.
 ///
@@ -33,20 +17,28 @@ pub fn process_instruction(
 /// 0. `[WRITE, SIGNER]` The source account.
 /// 1. `[WRITE]` The destination account.
 pub fn process_transfer<'a>(
-    accounts: &'a [AccountInfo],
-    lamports: u64,        // The amount of lamports to transfer.
-    signers: &[Signer],   // The signers array needed to authorize the transaction.
+    accounts: &'a [AccountView],
+    lamports: u64,
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [from_account, to_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    // Ensure that the 'from' account is writable and a signer
-    assert!(from_account.is_writable() || from_account.is_signer());
+    // Ensure that the 'from' account is a signer
+    if !from_account.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Ensure that the 'from' account is writable
+    if !from_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Ensure that the 'to' account is writable
-    assert!(to_account.is_writable());
+    if !to_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Creating the instruction instance
     let transfer_instruction = Transfer {
@@ -56,7 +48,55 @@ pub fn process_transfer<'a>(
     };
 
     // Invoking the instruction
-    transfer_instruction.invoke_signed(signers)?;
+    transfer_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_sdk_ids::system_program;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+    };
+
+    #[test]
+    fn test_transfer() {
+        let program_id = Pubkey::new_unique();
+        let mollusk = Mollusk::new(&program_id, "programs");
+
+        let from_account = Pubkey::new_unique();
+        let to_account = Pubkey::new_unique();
+        let lamports: u64 = 1_000_000;
+
+        // Discriminator 1 = SYSTEM_TRANSFER
+        let mut data = vec![1u8];
+        data.extend_from_slice(&lamports.to_le_bytes());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &data,
+            vec![
+                AccountMeta::new(from_account, true),
+                AccountMeta::new(to_account, false),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (
+                    from_account,
+                    Account::new(10_000_000_000, 0, &system_program::ID),
+                ),
+                (
+                    to_account,
+                    Account::new(0, 0, &system_program::ID),
+                ),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

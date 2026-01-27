@@ -1,27 +1,11 @@
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::Signer,
-    pubkey::Pubkey,
-    ProgramResult
+    AccountView,
+    Address,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_system::instructions::TransferWithSeed;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-    process_transfer_with_seed(accounts, lamports, seed, owner, signers)
-}
 
 /// Processes the `TransferWithSeed` instruction.
 ///
@@ -37,25 +21,30 @@ pub fn process_instruction(
 /// 1. `[SIGNER]` The base account used to derive the source account.
 /// 2. `[WRITE]` The destination account.
 pub fn process_transfer_with_seed<'a>(
-    accounts: &'a [AccountInfo],
-    lamports: u64,        //  The amount of lamports to transfer.
-    seed: &'a str,        // The seed used to derive the address of the funding account.
-    owner: &'a Pubkey,    // The address of the program that will own the new account.
-    signers: &[Signer],   // The signers array needed to authorize the transaction.
+    accounts: &'a [AccountView],
+    lamports: u64,
+    seed: &'a str,
+    owner: &'a Address,
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [from_account, base_account, to_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure that the 'from' account is writable
-    assert!(from_account.is_writable());
+    if !from_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Ensure that the 'base' account is a signer
-    assert!(base_account.is_signer());
+    if !base_account.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Ensure that the 'to' account is writable
-    assert!(to_account.is_writable());
+    if !to_account.is_writable() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Creating the instruction instance
     let transfer_instruction = TransferWithSeed {
@@ -68,7 +57,63 @@ pub fn process_transfer_with_seed<'a>(
     };
 
     // Invoking the instruction
-    transfer_instruction.invoke_signed(signers)?;
+    transfer_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_sdk_ids::system_program;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+    };
+
+    #[test]
+    fn test_transfer_with_seed() {
+        let program_id = Pubkey::new_unique();
+        let mollusk = Mollusk::new(&program_id, "target/deploy/programs");
+
+        let base_account = Pubkey::new_unique();
+        let seed = "test_seed";
+        let from_account =
+            Pubkey::create_with_seed(&base_account, seed, &system_program::ID).unwrap();
+        let to_account = Pubkey::new_unique();
+        let lamports: u64 = 1_000_000;
+
+        // Discriminator 11 = SYSTEM_TRANSFER_WITH_SEED
+        let mut instruction_data = vec![11u8];
+        instruction_data.extend_from_slice(&lamports.to_le_bytes());
+
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &instruction_data,
+            vec![
+                AccountMeta::new(from_account, false),
+                AccountMeta::new_readonly(base_account, true),
+                AccountMeta::new(to_account, false),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (
+                    from_account,
+                    Account::new(10_000_000_000, 0, &system_program::ID),
+                ),
+                (
+                    base_account,
+                    Account::new(1_000_000_000, 0, &system_program::ID),
+                ),
+                (
+                    to_account,
+                    Account::new(0, 0, &system_program::ID),
+                ),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }

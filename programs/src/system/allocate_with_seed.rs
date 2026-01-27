@@ -1,23 +1,11 @@
 use pinocchio::{
-    account_info::AccountInfo, entrypoint, instruction::Signer, program_error::ProgramError, pubkey::{self, Pubkey}, ProgramResult
+    AccountView,
+    Address,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_system::instructions::AllocateWithSeed;
-
-const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-entrypoint!(process_instruction);
-
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    process_allocate_with_seed(accounts, seed, space, owner, signers)
-}
 
 /// Processes the `AllocateWithSeed` instruction.
 ///
@@ -32,22 +20,20 @@ pub fn process_instruction(
 /// 0. `[WRITE]` The allocated account.
 /// 1. `[SIGNER]` The base account used to derive the allocated account.
 pub fn process_allocate_with_seed<'a>(
-    accounts: &'a [AccountInfo],
-    seed: &str,            // String used along with the base public key to derive the allocated account's address.
-    space: u64,            // The number of bytes to allocate for the account.
-    owner: &Pubkey,        // The program that will own the allocated account.
+    accounts: &'a [AccountView],
+    seed: &str,
+    space: u64,
+    owner: &Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    // Extracting account information
     let [allocated_account, base_account] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
     // Ensure the base account is a signer
-    assert!(base_account.is_signer());
-
-    // Validate the seed length
-    assert!(seed.len() > pubkey::MAX_SEED_LEN);
+    if !base_account.is_signer() {
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
     // Creating the instruction instance
     let allocate_with_seed_instruction = AllocateWithSeed {
@@ -59,7 +45,53 @@ pub fn process_allocate_with_seed<'a>(
     };
 
     // Invoking the instruction
-    allocate_with_seed_instruction.invoke_signed(signers)?;
+    allocate_with_seed_instruction.invoke_signed(signers)
+}
 
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use mollusk_svm::Mollusk;
+    use solana_sdk_ids::system_program;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+        pubkey::Pubkey,
+    };
+
+    #[test]
+    fn test_allocate_with_seed() {
+        let program_id = Pubkey::new_unique();
+        let mollusk = Mollusk::new(&program_id, "target/deploy/programs");
+
+        let base_account = Pubkey::new_unique();
+        let seed = "test_seed";
+        let allocated_account =
+            Pubkey::create_with_seed(&base_account, seed, &system_program::ID).unwrap();
+
+        // Discriminator 4 = SYSTEM_ALLOCATE_WITH_SEED
+        let instruction = Instruction::new_with_bytes(
+            program_id,
+            &[4u8],
+            vec![
+                AccountMeta::new(allocated_account, false),
+                AccountMeta::new_readonly(base_account, true),
+            ],
+        );
+
+        let result = mollusk.process_instruction(
+            &instruction,
+            &vec![
+                (
+                    allocated_account,
+                    Account::new(1_000_000_000, 0, &system_program::ID),
+                ),
+                (
+                    base_account,
+                    Account::new(1_000_000_000, 0, &system_program::ID),
+                ),
+            ],
+        );
+
+        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+    }
 }
