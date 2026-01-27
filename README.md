@@ -13,15 +13,16 @@
 - [System Instructions](#system-instructions)
 - [Token Instructions](#token-instructions)
 - [Key API Changes](#key-api-changes-in-pinocchio-010x)
+- [Examples] (#examples)
 - [Resources](#resources)
 
 ## Introduction
 
-The Pinocchio Guide is your go-to resource for understanding and implementing core account management functionalities within the Solana blockchain. This guide emphasizes foundational principles, code-level explanations, and best practices to empower developers in leveraging Solana's unique system of transaction optimization.
+Pinocchio is a zero-dependency library to create Solana programs in Rust. It takes advantage of the way SVM loaders serialize the program input parameters into a byte array that is then passed to the program's entrypoint to define zero-copy types to read the input. Since the communication between a program and SVM loader — either at the first time the program is called or when one program invokes the instructions of another program — is done via a byte array, a program can define its own types. This completely eliminates the dependency on the solana-program crate, which in turn mitigates dependency issues by having a crate specifically designed to create on-chain programs.
 
-Pinocchio simplifies advanced blockchain programming by offering a robust and optimized framework for system-level operations with **zero dependencies**.
+As a result, Pinocchio can be used as a replacement for solana-program to write on-chain programs, which are optimized in terms of both compute units consumption and binary size.
 
-This documentation focuses on showing examples of instruction calls using **pinocchio v0.10.1**, detailing its structure and usage to enhance your development experience.
+The Pinocchio Guide serves as a comprehensive resource for understanding and implementing core account management functionalities on the Solana blockchain. It emphasizes foundational principles, code-level explanations, and best practices to help developers fully leverage Solana's unique transaction optimization system.
 
 ## Project Status
 
@@ -69,11 +70,13 @@ test token::approve::tests::test_approve ... ok
 test result: ok. 29 passed; 0 failed; 0 ignored
 ```
 
-## System Instructions
+Feel free to contribute to the repository and optimize the examples and documentation in any way!
 
-Pinocchio supports a range of system instructions that are essential for managing accounts and ensuring transaction security. These instructions operate at the core of Solana's blockchain to handle critical features like account creation, nonce advancement, and rent management.
+## Documentation
 
-### AdvanceNonceAccount
+- [Guide](GUIDE.md): This file provides a comprehensive explanation of Pinocchio's core functionalities, focusing on system-level operations and instruction calls. It includes examples and best practices for implementing account management functionalities on the Solana blockchain.
+  
+- [Tutorial](TUTORIAL.md): This file demonstrates how to transform an Anchor-based Vault into a Pinocchio-based Vault. It provides step-by-step instructions for building and optimizing a Vault program, comparing the high-level abstractions of Anchor with the low-level optimizations of Pinocchio.
 
 Increments the nonce value in a nonce account to ensure transaction uniqueness and replay protection.
 
@@ -606,17 +609,9 @@ pub fn process_transfer_checked<'a>(
 }
 ```
 
-## Key API Changes in Pinocchio 0.10.x
+## Examples
 
-| Old API | New API |
-|---------|---------|
-| `AccountInfo` | `AccountView` |
-| `account_info::next_account_info()` | Array destructuring: `let [a, b] = accounts` |
-| `program_error::ProgramError` | `error::ProgramError` |
-| `pubkey::Pubkey` | `Address` |
-| `account.is_signer` (field) | `account.is_signer()` (method) |
-| `account.is_writable` (field) | `account.is_writable()` (method) |
-| `instruction::Signer` | `cpi::Signer` |
+The `examples` folder contains program examples that implement Pinocchio functions. These examples are still a work in progress and may contain errors or incomplete implementations. Contributions to improve these examples are welcome!
 
 ## Resources
 

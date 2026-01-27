@@ -29,7 +29,7 @@ pub fn process_initialize_account<'a>(accounts: &'a [AccountView]) -> ProgramRes
         return Err(ProgramError::InvalidAccountData);
     }
 
-    // Creating the instruction instance
+    // Construct the `InitializeAccount` instruction.
     let initialize_account_instruction = InitializeAccount {
         account: account_to_initialize,
         mint: mint_account,
@@ -54,6 +54,7 @@ mod tests {
     };
     use spl_token::state::Mint;
 
+    /// Tests the transfer functionality of the token program.
     #[test]
     fn test_initialize_account() {
         let program_id = Pubkey::new_unique();
@@ -86,6 +87,7 @@ mod tests {
         // Discriminator 21 = TOKEN_INIT_ACCOUNT
         let instruction_data = vec![21u8];
 
+        // Construct the transfer instruction.
         let instruction = Instruction::new_with_bytes(
             program_id,
             &instruction_data,

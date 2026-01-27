@@ -44,7 +44,7 @@ pub fn process_transfer<'a>(
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    // Construct the Transfer instruction
+    // Construct the `Transfer` instruction.
     let transfer_instruction = Transfer {
         from: sender_account,
         to: recipient_account,
@@ -68,6 +68,10 @@ mod tests {
     };
     use spl_token::state::AccountState;
 
+    /// Tests the `Transfer` instruction.
+    ///
+    /// This test sets up a mock environment, creates accounts, and verifies that the
+    /// transfer instruction processes successfully.
     #[test]
     fn test_transfer() {
         let program_id = Pubkey::new_unique();
@@ -117,6 +121,7 @@ mod tests {
         let mut instruction_data = vec![22u8];
         instruction_data.extend_from_slice(&amount.to_le_bytes());
 
+        // Construct the transfer instruction.
         let instruction = Instruction::new_with_bytes(
             program_id,
             &instruction_data,

@@ -15,8 +15,11 @@ use pinocchio_token::instructions::InitializeMint;
 /// - `freeze_authority`: An optional public key for the freeze authority.
 ///
 /// ### Accounts:
-///   0. `[WRITABLE]` Mint account.
-///   1. `[]` Rent sysvar.
+/// 0. `[WRITABLE]` Mint account.
+/// 1. `[]` Rent sysvar.
+///
+/// ### Returns:
+/// - `ProgramResult`: Indicates success or failure of the instruction processing.
 pub fn process_initialize_mint<'a>(
     accounts: &'a [AccountView],
     decimals: u8,
@@ -34,7 +37,7 @@ pub fn process_initialize_mint<'a>(
         return Err(ProgramError::InvalidAccountData);
     }
 
-    // Creating the instruction instance
+    // Construct the `InitializeMint` instruction.
     let initialize_mint_instruction = InitializeMint {
         mint: mint_account,
         rent_sysvar,

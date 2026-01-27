@@ -4,13 +4,16 @@ use pinocchio::{
     error::ProgramError,
     ProgramResult,
 };
+
 use pinocchio_system::instructions::AdvanceNonceAccount;
 
 /// Processes the `AdvanceNonceAccount` instruction.
 ///
+/// This function handles the logic for advancing a nonce account. It validates the accounts
+/// and signers, constructs the instruction, and invokes it.
+///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
-/// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
 /// 0. `[WRITE]` The Nonce account.
@@ -59,6 +62,11 @@ mod tests {
         sysvar,
     };
 
+    /// Unit test for the `process_advance_nonce_account` function.
+    ///
+    /// This test sets up a mock environment using the `Mollusk` framework, creates
+    /// the necessary accounts and instruction, and verifies that the instruction
+    /// processes successfully.
     #[test]
     fn test_advance_nonce_account() {
         let program_id = Pubkey::new_unique();
@@ -77,6 +85,7 @@ mod tests {
         // Discriminator 7 = SYSTEM_ADVANCE_NONCE
         let instruction_data = vec![7u8];
 
+        // Construct the instruction with the required accounts.
         let instruction = Instruction::new_with_bytes(
             program_id,
             &instruction_data,
