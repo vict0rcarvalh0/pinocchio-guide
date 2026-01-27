@@ -19,9 +19,11 @@ pub fn process_revoke<'a>(
     accounts: &'a [AccountView],
     signers: &[Signer],
 ) -> ProgramResult {
-    let [source_account, owner_account] = accounts else {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let source_account = &accounts[0];
+    let owner_account = &accounts[1];
 
     // Ensure the source account is writable
     if !source_account.is_writable() {
@@ -48,7 +50,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -81,7 +83,7 @@ mod tests {
             delegated_amount: 500_000,
             close_authority: COption::None,
         }
-        .pack_into_slice(source_account.data_as_mut_slice());
+        .pack_into_slice(source_account.data.as_mut_slice());
 
         let instruction = Instruction::new_with_bytes(
             program_id,

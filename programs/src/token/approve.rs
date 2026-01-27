@@ -22,9 +22,12 @@ pub fn process_approve<'a>(
     amount: u64,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [source_account, delegate_account, authority_account] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let source_account = &accounts[0];
+    let delegate_account = &accounts[1];
+    let authority_account = &accounts[2];
 
     // Ensure that the 'source' account is writable
     if !source_account.is_writable() {
@@ -53,12 +56,12 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
     };
-    use spl_token::state::AccountState;
+    use spl_token::state::{AccountState, Account as TokenAccount};
 
     #[test]
     fn test_approve() {
@@ -72,11 +75,10 @@ mod tests {
         let mint = Pubkey::new_unique();
         let owner = Pubkey::new_unique();
         let delegate = Pubkey::new_unique();
-        let source_account_pubkey = Pubkey::new_unique();
+        let source_pubkey = Pubkey::new_unique();
 
-        let mut source_account =
-            Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
-        spl_token::state::Account {
+        let mut source_account = Account::new(1_000_000_000, TokenAccount::LEN, &spl_token::ID);
+        TokenAccount {
             mint,
             owner,
             amount: 1_000_000,
@@ -86,15 +88,19 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(source_account.data_as_mut_slice());
+        .pack_into_slice(&mut source_account.data);
 
         let amount: u64 = 500_000;
 
+        // Discriminator 23 = TOKEN_APPROVE
+        let mut data = vec![23u8];
+        data.extend_from_slice(&amount.to_le_bytes());
+
         let instruction = Instruction::new_with_bytes(
             program_id,
-            &amount.to_le_bytes(),
+            &data,
             vec![
-                AccountMeta::new(source_account_pubkey, false),
+                AccountMeta::new(source_pubkey, false),
                 AccountMeta::new_readonly(delegate, false),
                 AccountMeta::new_readonly(owner, true),
                 AccountMeta::new_readonly(token_program, false),
@@ -104,12 +110,9 @@ mod tests {
         let result = mollusk.process_instruction(
             &instruction,
             &vec![
-                (source_account_pubkey, source_account),
+                (source_pubkey, source_account),
                 (delegate, Account::new(0, 0, &Pubkey::default())),
-                (
-                    owner,
-                    Account::new(1_000_000_000, 0, &Pubkey::default()),
-                ),
+                (owner, Account::new(1_000_000_000, 0, &Pubkey::default())),
                 (token_program, token_program_account),
             ],
         );

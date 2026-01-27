@@ -22,9 +22,12 @@ pub fn process_burn<'a>(
     amount: u64,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [burn_account, mint_account, authority_account] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let burn_account = &accounts[0];
+    let mint_account = &accounts[1];
+    let authority_account = &accounts[2];
 
     // Ensure that the 'burn' account is writable
     if !burn_account.is_writable() {
@@ -58,7 +61,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -87,7 +90,7 @@ mod tests {
             is_initialized: true,
             freeze_authority: COption::None,
         }
-        .pack_into_slice(mint_account.data_as_mut_slice());
+        .pack_into_slice(mint_account.data.as_mut_slice());
 
         let mut burn_account =
             Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
@@ -101,7 +104,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(burn_account.data_as_mut_slice());
+        .pack_into_slice(burn_account.data.as_mut_slice());
 
         let amount: u64 = 100_000;
 

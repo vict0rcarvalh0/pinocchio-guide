@@ -22,9 +22,12 @@ pub fn process_transfer<'a>(
     amount: u64,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [sender_account, recipient_account, authority_account] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let sender_account = &accounts[0];
+    let recipient_account = &accounts[1];
+    let authority_account = &accounts[2];
 
     // Validate that the sender account is writable
     if !sender_account.is_writable() {
@@ -58,7 +61,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -92,7 +95,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(sender_ta_account.data_as_mut_slice());
+        .pack_into_slice(sender_ta_account.data.as_mut_slice());
 
         let mut recipient_ta_account =
             Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
@@ -106,7 +109,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(recipient_ta_account.data_as_mut_slice());
+        .pack_into_slice(recipient_ta_account.data.as_mut_slice());
 
         let amount: u64 = 100_000;
 

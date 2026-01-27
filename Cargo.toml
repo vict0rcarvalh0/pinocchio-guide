@@ -17,5 +17,5 @@ solana-sdk = "3.0.0"
 solana-program = "3.0.0"
 solana-sdk-ids = "3.1.0"
 solana-program-pack = "3.0.0"
-mollusk-svm = "0.10.1"
+mollusk-svm = { version = "0.10.1", features = ["all-builtins"] }
 mollusk-svm-programs-token = "0.10.1"

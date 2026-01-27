@@ -24,9 +24,12 @@ pub fn process_mint_to_checked<'a>(
     decimals: u8,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [mint_account, token_account, mint_authority] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let mint_account = &accounts[0];
+    let token_account = &accounts[1];
+    let mint_authority = &accounts[2];
 
     // Ensure the mint account is writable
     if !mint_account.is_writable() {
@@ -61,7 +64,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -91,7 +94,7 @@ mod tests {
             is_initialized: true,
             freeze_authority: COption::None,
         }
-        .pack_into_slice(mint_account.data_as_mut_slice());
+        .pack_into_slice(mint_account.data.as_mut_slice());
 
         let mut token_account =
             Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
@@ -105,7 +108,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(token_account.data_as_mut_slice());
+        .pack_into_slice(token_account.data.as_mut_slice());
 
         let amount: u64 = 1_000_000;
         let decimals: u8 = 9;

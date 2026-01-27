@@ -1,11 +1,19 @@
 # Pinocchio Guide
 
+[![Tests](https://img.shields.io/badge/tests-29%20passing-brightgreen)](.)
+[![Pinocchio](https://img.shields.io/badge/pinocchio-v0.10.1-blue)](https://github.com/anza-xyz/pinocchio)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
+
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [Project Status](#project-status)
 - [Dependencies](#dependencies)
+- [Running Tests](#running-tests)
 - [System Instructions](#system-instructions)
 - [Token Instructions](#token-instructions)
+- [Key API Changes](#key-api-changes-in-pinocchio-010x)
+- [Resources](#resources)
 
 ## Introduction
 
@@ -14,6 +22,17 @@ The Pinocchio Guide is your go-to resource for understanding and implementing co
 Pinocchio simplifies advanced blockchain programming by offering a robust and optimized framework for system-level operations with **zero dependencies**.
 
 This documentation focuses on showing examples of instruction calls using **pinocchio v0.10.1**, detailing its structure and usage to enhance your development experience.
+
+## Project Status
+
+**All 29 tests passing** - The project includes comprehensive test coverage using [Mollusk](https://github.com/anza-xyz/mollusk), Solana's lightweight test harness.
+
+| Category | Instructions | Tests |
+|----------|-------------|-------|
+| System Instructions | 13 | All passing |
+| Token Instructions | 16 | All passing |
+
+All instructions demonstrate **real CPI (Cross-Program Invocation) calls** to the System Program and SPL Token Program.
 
 ## Dependencies
 
@@ -24,6 +43,30 @@ Add these to your `Cargo.toml`:
 pinocchio = { version = "0.10.1", features = ["cpi"] }
 pinocchio-system = "0.5.0"
 pinocchio-token = "0.5.0"
+```
+
+## Running Tests
+
+The project uses [Mollusk](https://github.com/anza-xyz/mollusk), a lightweight test harness that provides a minified Solana Virtual Machine (SVM) environment.
+
+```bash
+# 1. Build the program for SBF (Solana BPF)
+cargo build-sbf
+
+# 2. Run tests with SBF_OUT_DIR pointing to the compiled program
+SBF_OUT_DIR="$(pwd)/target/deploy" cargo test
+```
+
+**Note:** The `SBF_OUT_DIR` environment variable tells Mollusk where to find the compiled `.so` program file. Tests will fail without it.
+
+Expected output:
+```
+running 29 tests
+test system::assign::tests::test_assign ... ok
+test system::transfer_lamports::tests::test_transfer ... ok
+test token::approve::tests::test_approve ... ok
+...
+test result: ok. 29 passed; 0 failed; 0 ignored
 ```
 
 ## System Instructions
@@ -574,20 +617,6 @@ pub fn process_transfer_checked<'a>(
 | `account.is_signer` (field) | `account.is_signer()` (method) |
 | `account.is_writable` (field) | `account.is_writable()` (method) |
 | `instruction::Signer` | `cpi::Signer` |
-
-## Running Tests
-
-The project includes tests using [Mollusk](https://github.com/anza-xyz/mollusk), a lightweight test harness for Solana programs. To run them:
-
-```bash
-# First, build the program for SBF (Solana BPF)
-cargo build-sbf
-
-# Then run tests with SBF_OUT_DIR set to the deploy directory
-SBF_OUT_DIR="$(pwd)/target/deploy" cargo test
-```
-
-The `SBF_OUT_DIR` environment variable tells Mollusk where to find the compiled `.so` program file.
 
 ## Resources
 

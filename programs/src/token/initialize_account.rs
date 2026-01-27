@@ -16,9 +16,13 @@ use pinocchio_token::instructions::InitializeAccount;
 ///   2. `[]` The new account's owner/multisignature.
 ///   3. `[]` Rent sysvar.
 pub fn process_initialize_account<'a>(accounts: &'a [AccountView]) -> ProgramResult {
-    let [account_to_initialize, mint_account, owner_account, rent_sysvar] = accounts else {
+    if accounts.len() < 4 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let account_to_initialize = &accounts[0];
+    let mint_account = &accounts[1];
+    let owner_account = &accounts[2];
+    let rent_sysvar = &accounts[3];
 
     // Ensure that the account to initialize is writable
     if !account_to_initialize.is_writable() {
@@ -42,12 +46,13 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
         sysvar,
     };
+    use spl_token::state::Mint;
 
     #[test]
     fn test_initialize_account() {
@@ -62,26 +67,28 @@ mod tests {
         let owner = Pubkey::new_unique();
         let account_to_initialize = Pubkey::new_unique();
 
-        let mut mint_account =
-            Account::new(1_000_000_000, spl_token::state::Mint::LEN, &spl_token::id());
-        spl_token::state::Mint {
+        let mut mint_account = Account::new(1_000_000_000, Mint::LEN, &spl_token::ID);
+        Mint {
             mint_authority: COption::Some(owner),
             supply: 0,
             decimals: 9,
             is_initialized: true,
             freeze_authority: COption::None,
         }
-        .pack_into_slice(mint_account.data_as_mut_slice());
+        .pack_into_slice(&mut mint_account.data);
 
         let new_account = Account::new(
             mollusk.sysvars.rent.minimum_balance(spl_token::state::Account::LEN),
             spl_token::state::Account::LEN,
-            &spl_token::id(),
+            &spl_token::ID,
         );
+
+        // Discriminator 21 = TOKEN_INIT_ACCOUNT
+        let instruction_data = vec![21u8];
 
         let instruction = Instruction::new_with_bytes(
             program_id,
-            &[21u8, 21u8],
+            &instruction_data,
             vec![
                 AccountMeta::new(account_to_initialize, false),
                 AccountMeta::new_readonly(mint_pubkey, false),
@@ -91,16 +98,15 @@ mod tests {
             ],
         );
 
+        let (_, rent_account) = mollusk.sysvars.keyed_account_for_rent_sysvar();
+
         let result = mollusk.process_instruction(
             &instruction,
             &vec![
                 (account_to_initialize, new_account),
                 (mint_pubkey, mint_account),
-                (
-                    owner,
-                    Account::new(1_000_000_000, 0, &Pubkey::default()),
-                ),
-                (sysvar::rent::ID, mollusk.sysvars.keyed_account_for_rent_sysvar().1),
+                (owner, Account::new(1_000_000_000, 0, &Pubkey::default())),
+                (sysvar::rent::ID, rent_account),
                 (token_program, token_program_account),
             ],
         );

@@ -23,9 +23,11 @@ pub fn process_initialize_mint<'a>(
     mint_authority: &Address,
     freeze_authority: Option<&Address>,
 ) -> ProgramResult {
-    let [mint_account, rent_sysvar] = accounts else {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let mint_account = &accounts[0];
+    let rent_sysvar = &accounts[1];
 
     // Ensure the mint account is writable
     if !mint_account.is_writable() {
@@ -55,6 +57,7 @@ mod tests {
         pubkey::Pubkey,
         sysvar,
     };
+    use spl_token::state::Mint;
 
     #[test]
     fn test_initialize_mint() {
@@ -69,17 +72,16 @@ mod tests {
         let mint_authority = Pubkey::new_unique();
 
         let mint_account = Account::new(
-            mollusk.sysvars.rent.minimum_balance(spl_token::state::Mint::LEN),
-            spl_token::state::Mint::LEN,
-            &spl_token::id(),
+            mollusk.sysvars.rent.minimum_balance(Mint::LEN),
+            Mint::LEN,
+            &spl_token::ID,
         );
 
         let decimals: u8 = 9;
 
-        let mut data = Vec::new();
+        // Discriminator 20 = TOKEN_INIT_MINT
+        let mut data = vec![20u8];
         data.push(decimals);
-        data.extend_from_slice(mint_authority.as_ref());
-        data.push(0); // No freeze authority
 
         let instruction = Instruction::new_with_bytes(
             program_id,
@@ -87,6 +89,7 @@ mod tests {
             vec![
                 AccountMeta::new(mint_pubkey, false),
                 AccountMeta::new_readonly(sysvar::rent::ID, false),
+                AccountMeta::new_readonly(mint_authority, false),
                 AccountMeta::new_readonly(token_program, false),
             ],
         );
@@ -95,7 +98,8 @@ mod tests {
             &instruction,
             &vec![
                 (mint_pubkey, mint_account),
-                (sysvar::rent::ID, mollusk.sysvars.keyed_account_for_rent_sysvar().1),
+                mollusk.sysvars.keyed_account_for_rent_sysvar(),
+                (mint_authority, Account::new(0, 0, &Pubkey::default())),
                 (token_program, token_program_account),
             ],
         );

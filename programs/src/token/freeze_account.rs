@@ -20,9 +20,12 @@ pub fn process_freeze_account<'a>(
     accounts: &'a [AccountView],
     signers: &[Signer],
 ) -> ProgramResult {
-    let [account_to_freeze, mint_account, freeze_authority] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let account_to_freeze = &accounts[0];
+    let mint_account = &accounts[1];
+    let freeze_authority = &accounts[2];
 
     // Ensure that the account to freeze is writable
     if !account_to_freeze.is_writable() {
@@ -50,7 +53,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -80,7 +83,7 @@ mod tests {
             is_initialized: true,
             freeze_authority: COption::Some(freeze_authority),
         }
-        .pack_into_slice(mint_account.data_as_mut_slice());
+        .pack_into_slice(mint_account.data.as_mut_slice());
 
         let mut account_to_freeze =
             Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
@@ -94,7 +97,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(account_to_freeze.data_as_mut_slice());
+        .pack_into_slice(account_to_freeze.data.as_mut_slice());
 
         let instruction = Instruction::new_with_bytes(
             program_id,

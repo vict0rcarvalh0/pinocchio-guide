@@ -25,9 +25,13 @@ pub fn process_transfer_checked<'a>(
     decimals: u8,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [from_account, mint_account, to_account, authority_account] = accounts else {
+    if accounts.len() < 4 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let from_account = &accounts[0];
+    let mint_account = &accounts[1];
+    let to_account = &accounts[2];
+    let authority_account = &accounts[3];
 
     // Ensure the 'from' account is writable
     if !from_account.is_writable() {
@@ -63,7 +67,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -94,7 +98,7 @@ mod tests {
             is_initialized: true,
             freeze_authority: COption::None,
         }
-        .pack_into_slice(mint_account.data_as_mut_slice());
+        .pack_into_slice(mint_account.data.as_mut_slice());
 
         let mut sender_ta_account =
             Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
@@ -108,7 +112,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(sender_ta_account.data_as_mut_slice());
+        .pack_into_slice(sender_ta_account.data.as_mut_slice());
 
         let mut recipient_ta_account =
             Account::new(1_000_000_000, spl_token::state::Account::LEN, &spl_token::id());
@@ -122,7 +126,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(recipient_ta_account.data_as_mut_slice());
+        .pack_into_slice(recipient_ta_account.data.as_mut_slice());
 
         let amount: u64 = 100_000;
         let decimals: u8 = 9;

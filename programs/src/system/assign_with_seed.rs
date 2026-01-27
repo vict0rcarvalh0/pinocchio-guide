@@ -24,9 +24,11 @@ pub fn process_assign_with_seed<'a>(
     owner: &Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [assigned_account, base_account] = accounts else {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let assigned_account = &accounts[0];
+    let base_account = &accounts[1];
 
     // Ensure the base account is a signer
     if !base_account.is_signer() {
@@ -47,7 +49,7 @@ pub fn process_assign_with_seed<'a>(
 
 #[cfg(test)]
 mod tests {
-    use mollusk_svm::Mollusk;
+    use mollusk_svm::{program::keyed_account_for_system_program, Mollusk};
     use solana_sdk_ids::system_program;
     use solana_sdk::{
         account::Account,
@@ -58,7 +60,8 @@ mod tests {
     #[test]
     fn test_assign_with_seed() {
         let program_id = Pubkey::new_unique();
-        let mollusk = Mollusk::new(&program_id, "programs");
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        
 
         let base_account = Pubkey::new_unique();
         let seed = "test_seed";

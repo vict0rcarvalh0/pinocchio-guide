@@ -20,9 +20,12 @@ pub fn process_close_account<'a>(
     accounts: &'a [AccountView],
     signers: &[Signer],
 ) -> ProgramResult {
-    let [close_account, destination_account, authority_account] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let close_account = &accounts[0];
+    let destination_account = &accounts[1];
+    let authority_account = &accounts[2];
 
     // Ensure that the 'close' account is writable
     if !close_account.is_writable() {
@@ -55,7 +58,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -88,7 +91,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(close_account.data_as_mut_slice());
+        .pack_into_slice(close_account.data.as_mut_slice());
 
         let instruction = Instruction::new_with_bytes(
             program_id,

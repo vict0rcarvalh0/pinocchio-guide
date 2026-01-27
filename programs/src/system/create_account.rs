@@ -26,9 +26,11 @@ pub fn process_create_account<'a>(
     owner: &Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [funding_account, new_account] = accounts else {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let funding_account = &accounts[0];
+    let new_account = &accounts[1];
 
     // Ensure the funding account and new account are signers
     if !funding_account.is_signer() || !new_account.is_signer() {
@@ -50,42 +52,50 @@ pub fn process_create_account<'a>(
 
 #[cfg(test)]
 mod tests {
-    use mollusk_svm::Mollusk;
+    use mollusk_svm::{program::keyed_account_for_system_program, Mollusk};
     use solana_sdk_ids::system_program;
     use solana_sdk::{
         account::Account,
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
-        };
+    };
 
     #[test]
     fn test_create_account() {
         let program_id = Pubkey::new_unique();
         let mollusk = Mollusk::new(&program_id, "programs");
 
-        let funding_account = Pubkey::new_unique();
-        let new_account = Pubkey::new_unique();
+        let funding_pubkey = Pubkey::new_unique();
+        let new_pubkey = Pubkey::new_unique();
+        let owner = Pubkey::new_unique();
+
+        let (system_program_id, system_program_account) = keyed_account_for_system_program();
+
+        let lamports: u64 = 1_000_000;
+        let space: u64 = 100;
+
+        // Discriminator 2 = SYSTEM_CREATE_ACCOUNT
+        let mut data = vec![2u8];
+        data.extend_from_slice(&lamports.to_le_bytes());
+        data.extend_from_slice(&space.to_le_bytes());
+        data.extend_from_slice(owner.as_ref());
 
         let instruction = Instruction::new_with_bytes(
             program_id,
-            &[2u8, 2u8],
+            &data,
             vec![
-                AccountMeta::new(funding_account, true),
-                AccountMeta::new(new_account, true),
+                AccountMeta::new(funding_pubkey, true),
+                AccountMeta::new(new_pubkey, true),
+                AccountMeta::new_readonly(system_program_id, false),
             ],
         );
 
         let result = mollusk.process_instruction(
             &instruction,
             &vec![
-                (
-                    funding_account,
-                    Account::new(10_000_000_000, 0, &system_program::id()),
-                ),
-                (
-                    new_account,
-                    Account::new(0, 0, &system_program::id()),
-                ),
+                (funding_pubkey, Account::new(10_000_000_000, 0, &system_program::ID)),
+                (new_pubkey, Account::new(0, 0, &system_program::ID)),
+                (system_program_id, system_program_account),
             ],
         );
 

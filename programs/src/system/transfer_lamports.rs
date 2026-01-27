@@ -21,9 +21,11 @@ pub fn process_transfer<'a>(
     lamports: u64,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [from_account, to_account] = accounts else {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let from_account = &accounts[0];
+    let to_account = &accounts[1];
 
     // Ensure that the 'from' account is a signer
     if !from_account.is_signer() {
@@ -53,7 +55,7 @@ pub fn process_transfer<'a>(
 
 #[cfg(test)]
 mod tests {
-    use mollusk_svm::Mollusk;
+    use mollusk_svm::{program::keyed_account_for_system_program, Mollusk};
     use solana_sdk_ids::system_program;
     use solana_sdk::{
         account::Account,
@@ -66,34 +68,33 @@ mod tests {
         let program_id = Pubkey::new_unique();
         let mollusk = Mollusk::new(&program_id, "programs");
 
-        let from_account = Pubkey::new_unique();
-        let to_account = Pubkey::new_unique();
+        let from_pubkey = Pubkey::new_unique();
+        let to_pubkey = Pubkey::new_unique();
         let lamports: u64 = 1_000_000;
 
         // Discriminator 1 = SYSTEM_TRANSFER
         let mut data = vec![1u8];
         data.extend_from_slice(&lamports.to_le_bytes());
 
+        // Include system program in accounts for CPI
+        let (system_program_id, system_program_account) = keyed_account_for_system_program();
+
         let instruction = Instruction::new_with_bytes(
             program_id,
             &data,
             vec![
-                AccountMeta::new(from_account, true),
-                AccountMeta::new(to_account, false),
+                AccountMeta::new(from_pubkey, true),
+                AccountMeta::new(to_pubkey, false),
+                AccountMeta::new_readonly(system_program_id, false),
             ],
         );
 
         let result = mollusk.process_instruction(
             &instruction,
             &vec![
-                (
-                    from_account,
-                    Account::new(10_000_000_000, 0, &system_program::ID),
-                ),
-                (
-                    to_account,
-                    Account::new(0, 0, &system_program::ID),
-                ),
+                (from_pubkey, Account::new(10_000_000_000, 0, &system_program::ID)),
+                (to_pubkey, Account::new(0, 0, &system_program::ID)),
+                (system_program_id, system_program_account),
             ],
         );
 

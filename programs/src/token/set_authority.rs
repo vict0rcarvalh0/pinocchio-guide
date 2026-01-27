@@ -24,9 +24,11 @@ pub fn process_set_authority<'a>(
     new_authority: Option<&Address>,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [account_to_update, current_authority] = accounts else {
+    if accounts.len() < 2 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let account_to_update = &accounts[0];
+    let current_authority = &accounts[1];
 
     // Ensure the account to update is writable
     if !account_to_update.is_writable() {
@@ -55,11 +57,12 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
-        program_option::COption,
         pubkey::Pubkey,
     };
+    use solana_sdk::program_option::COption;
+    use spl_token::state::Mint;
 
     #[test]
     fn test_set_authority() {
@@ -74,22 +77,19 @@ mod tests {
         let current_authority = Pubkey::new_unique();
         let new_authority = Pubkey::new_unique();
 
-        let mut mint_account =
-            Account::new(1_000_000_000, spl_token::state::Mint::LEN, &spl_token::id());
-        spl_token::state::Mint {
+        let mut mint_account = Account::new(1_000_000_000, Mint::LEN, &spl_token::ID);
+        Mint {
             mint_authority: COption::Some(current_authority),
             supply: 1_000_000,
             decimals: 9,
             is_initialized: true,
             freeze_authority: COption::None,
         }
-        .pack_into_slice(mint_account.data_as_mut_slice());
+        .pack_into_slice(&mut mint_account.data);
 
-        // SetAuthority instruction data format:
-        // [0]: authority_type (0 = MintTokens)
-        // [1]: option flag (1 = Some)
-        // [2..34]: new_authority pubkey
-        let mut data = Vec::new();
+        // Discriminator 25 = TOKEN_SET_AUTHORITY
+        // Data format: [discriminator, authority_type, option_flag, new_authority_pubkey]
+        let mut data = vec![25u8];
         data.push(0); // MintTokens authority type
         data.push(1); // Some
         data.extend_from_slice(new_authority.as_ref());
@@ -108,10 +108,7 @@ mod tests {
             &instruction,
             &vec![
                 (mint_pubkey, mint_account),
-                (
-                    current_authority,
-                    Account::new(1_000_000_000, 0, &Pubkey::default()),
-                ),
+                (current_authority, Account::new(1_000_000_000, 0, &Pubkey::default())),
                 (token_program, token_program_account),
             ],
         );

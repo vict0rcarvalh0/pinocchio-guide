@@ -29,9 +29,12 @@ pub fn process_create_account_with_seed<'a>(
     owner: &Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [funding_account, new_account, base_account] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let funding_account = &accounts[0];
+    let new_account = &accounts[1];
+    let base_account = &accounts[2];
 
     // Ensure that funding account is a signer
     if !funding_account.is_signer() {
@@ -55,7 +58,7 @@ pub fn process_create_account_with_seed<'a>(
 
 #[cfg(test)]
 mod tests {
-    use mollusk_svm::Mollusk;
+    use mollusk_svm::{program::keyed_account_for_system_program, Mollusk};
     use solana_sdk_ids::system_program;
     use solana_sdk::{
         account::Account,
@@ -66,7 +69,8 @@ mod tests {
     #[test]
     fn test_create_account_with_seed() {
         let program_id = Pubkey::new_unique();
-        let mollusk = Mollusk::new(&program_id, "target/deploy/programs");
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        
 
         let funding_account = Pubkey::new_unique();
         let base_account = Pubkey::new_unique();

@@ -27,9 +27,12 @@ pub fn process_transfer_with_seed<'a>(
     owner: &'a Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [from_account, base_account, to_account] = accounts else {
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let from_account = &accounts[0];
+    let base_account = &accounts[1];
+    let to_account = &accounts[2];
 
     // Ensure that the 'from' account is writable
     if !from_account.is_writable() {
@@ -62,7 +65,7 @@ pub fn process_transfer_with_seed<'a>(
 
 #[cfg(test)]
 mod tests {
-    use mollusk_svm::Mollusk;
+    use mollusk_svm::{program::keyed_account_for_system_program, Mollusk};
     use solana_sdk_ids::system_program;
     use solana_sdk::{
         account::Account,
@@ -73,7 +76,8 @@ mod tests {
     #[test]
     fn test_transfer_with_seed() {
         let program_id = Pubkey::new_unique();
-        let mollusk = Mollusk::new(&program_id, "target/deploy/programs");
+        let mut mollusk = Mollusk::new(&program_id, "programs");
+        
 
         let base_account = Pubkey::new_unique();
         let seed = "test_seed";

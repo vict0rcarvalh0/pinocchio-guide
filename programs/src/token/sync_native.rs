@@ -13,9 +13,10 @@ use pinocchio_token::instructions::SyncNative;
 /// ### Accounts:
 ///   0. `[WRITE]` The native token account to be synchronized with the underlying lamports.
 pub fn process_sync_native<'a>(accounts: &'a [AccountView]) -> ProgramResult {
-    let [native_token_account] = accounts else {
+    if accounts.len() < 1 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let native_token_account = &accounts[0];
 
     // Validate if the account is writable
     if !native_token_account.is_writable() {
@@ -36,7 +37,7 @@ mod tests {
     use mollusk_svm::Mollusk;
     use solana_program_pack::Pack;
     use solana_sdk::{
-        account::{Account, WritableAccount},
+        account::Account,
         instruction::{AccountMeta, Instruction},
         program_option::COption,
         pubkey::Pubkey,
@@ -70,7 +71,7 @@ mod tests {
             delegated_amount: 0,
             close_authority: COption::None,
         }
-        .pack_into_slice(native_token_account.data_as_mut_slice());
+        .pack_into_slice(native_token_account.data.as_mut_slice());
 
         let instruction = Instruction::new_with_bytes(
             program_id,

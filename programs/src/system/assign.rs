@@ -1,13 +1,15 @@
 use pinocchio::{
-    AccountView,
-    Address,
     cpi::Signer,
     error::ProgramError,
+    AccountView,
+    Address,
     ProgramResult,
 };
 use pinocchio_system::instructions::Assign;
 
 /// Processes the `Assign` instruction.
+///
+/// Assigns an account to a new program owner.
 ///
 /// ### Parameters:
 /// - `accounts`: The accounts required for the instruction.
@@ -15,48 +17,48 @@ use pinocchio_system::instructions::Assign;
 /// - `signers`: The signers array needed to authorize the transaction.
 ///
 /// ### Accounts:
-/// 0. `[WRITE, SIGNER]` The account to be reassigned to a new program owner.
+/// 0. `[WRITE, SIGNER]` The account to be reassigned.
 pub fn process_assign<'a>(
     accounts: &'a [AccountView],
     owner: &Address,
     signers: &[Signer],
 ) -> ProgramResult {
-    let [assigned_account] = accounts else {
+    if accounts.is_empty() {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let assigned_account = &accounts[0];
 
-    // Ensure the assigned account is a signer
     if !assigned_account.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    // Creating the instruction instance
-    let assign_instruction = Assign {
+    Assign {
         account: assigned_account,
         owner,
-    };
-
-    // Invoking the instruction
-    assign_instruction.invoke_signed(signers)
+    }
+    .invoke_signed(signers)
 }
 
 #[cfg(test)]
 mod tests {
-    use mollusk_svm::Mollusk;
-    use solana_sdk_ids::system_program;
+    use mollusk_svm::{program::keyed_account_for_system_program, Mollusk};
     use solana_sdk::{
         account::Account,
         instruction::{AccountMeta, Instruction},
         pubkey::Pubkey,
     };
+    use solana_sdk_ids::system_program;
 
     #[test]
     fn test_assign() {
         let program_id = Pubkey::new_unique();
-        let mollusk = Mollusk::new(&program_id, "target/deploy/programs");
+        let mollusk = Mollusk::new(&program_id, "programs");
 
-        let assigned_account = Pubkey::new_unique();
+        let assigned_pubkey = Pubkey::new_unique();
         let new_owner = Pubkey::new_unique();
+
+        // Include system program for CPI
+        let (system_program_id, system_program_account) = keyed_account_for_system_program();
 
         // Discriminator 0 = SYSTEM_ASSIGN
         let mut instruction_data = vec![0u8];
@@ -65,17 +67,24 @@ mod tests {
         let instruction = Instruction::new_with_bytes(
             program_id,
             &instruction_data,
-            vec![AccountMeta::new(assigned_account, true)],
+            vec![
+                AccountMeta::new(assigned_pubkey, true),
+                AccountMeta::new_readonly(system_program_id, false),
+            ],
         );
 
         let result = mollusk.process_instruction(
             &instruction,
-            &vec![(
-                assigned_account,
-                Account::new(1_000_000_000, 0, &system_program::id()),
-            )],
+            &[
+                (assigned_pubkey, Account::new(1_000_000_000, 0, &system_program::ID)),
+                (system_program_id, system_program_account),
+            ],
         );
 
-        assert!(!result.program_result.is_err(), "Result: {:?}", result.program_result);
+        assert!(
+            !result.program_result.is_err(),
+            "Expected success, got: {:?}",
+            result.program_result
+        );
     }
 }
