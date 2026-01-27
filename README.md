@@ -94,4 +94,4 @@ SBF_OUT_DIR="$(pwd)/target/deploy" cargo test
 
 ## Contributing
 
-Contributions are welcome! Feel free to submit issues or pull requests to improve the guide, examples, or documentation.
+Contributions are welcome. Feel free to submit issues or pull requests to improve the guide, examples, or documentation.
