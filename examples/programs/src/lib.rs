@@ -15,38 +15,19 @@ use pinocchio::{entrypoint, error::ProgramError, AccountView, Address, ProgramRe
 
 // Re-export processing functions for external use
 pub use system::{
-    advance_nonce_account::process_advance_nonce_account,
-    allocate::process_allocate,
-    allocate_with_seed::process_allocate_with_seed,
-    assign::process_assign,
-    assign_with_seed::process_assign_with_seed,
-    authorize_nonce_account::process_authorize_nonce_account,
-    create_account::process_create_account,
-    create_account_with_seed::process_create_account_with_seed,
-    initialize_nonce_account::process_initialize_nonce_account,
-    transfer_lamports::process_transfer as process_system_transfer,
-    transfer_with_seed::process_transfer_with_seed,
-    update_nonce_account::process_update_nonce_account,
-    withdraw_nonce_account::process_withdraw_nonce_account,
+    process_advance_nonce_account, process_allocate, process_allocate_with_seed, process_assign,
+    process_assign_with_seed, process_authorize_nonce_account, process_create_account,
+    process_create_account_with_seed, process_initialize_nonce_account,
+    process_transfer as process_system_transfer, process_transfer_with_seed,
+    process_update_nonce_account, process_withdraw_nonce_account,
 };
 
 pub use token::{
-    approve::process_approve,
-    approve_checked::process_approve_checked,
-    burn::process_burn,
-    burn_checked::process_burn_checked,
-    close_account::process_close_account,
-    freeze_account::process_freeze_account,
-    initialize_account::process_initialize_account,
-    initialize_mint::process_initialize_mint,
-    mint_to::process_mint_to,
-    mint_to_checked::process_mint_to_checked,
-    revoke::process_revoke,
-    set_authority::process_set_authority,
-    sync_native::process_sync_native,
-    thaw_account::process_thaw_account,
-    transfer_checked::process_transfer_checked,
-    transfer_tokens::process_transfer as process_token_transfer,
+    process_approve, process_approve_checked, process_burn, process_burn_checked,
+    process_close_account, process_freeze_account, process_initialize_account,
+    process_initialize_mint, process_mint_to, process_mint_to_checked, process_revoke,
+    process_set_authority, process_sync_native, process_thaw_account, process_transfer_checked,
+    process_transfer as process_token_transfer,
 };
 
 // ============================================================================
@@ -154,9 +135,7 @@ pub fn process_instruction(
             process_allocate(accounts, space, &[])
         }
 
-        system_discriminator::ADVANCE_NONCE => {
-            process_advance_nonce_account(accounts, &[])
-        }
+        system_discriminator::ADVANCE_NONCE => process_advance_nonce_account(accounts, &[]),
 
         system_discriminator::WITHDRAW_NONCE => {
             // Data: 8 bytes lamports (u64 LE)
@@ -185,9 +164,7 @@ pub fn process_instruction(
             process_authorize_nonce_account(accounts, new_authority, &[])
         }
 
-        system_discriminator::UPDATE_NONCE => {
-            process_update_nonce_account(accounts)
-        }
+        system_discriminator::UPDATE_NONCE => process_update_nonce_account(accounts),
 
         // Seed-based instructions - simplified (would need full seed parsing in production)
         system_discriminator::ALLOCATE_WITH_SEED
@@ -218,9 +195,7 @@ pub fn process_instruction(
             process_initialize_mint(&accounts[..2], decimals, mint_authority, freeze_authority)
         }
 
-        token_discriminator::INIT_ACCOUNT => {
-            process_initialize_account(accounts)
-        }
+        token_discriminator::INIT_ACCOUNT => process_initialize_account(accounts),
 
         token_discriminator::TRANSFER => {
             // Data: 8 bytes amount (u64 LE)
@@ -240,9 +215,7 @@ pub fn process_instruction(
             process_approve(accounts, amount, &[])
         }
 
-        token_discriminator::REVOKE => {
-            process_revoke(accounts, &[])
-        }
+        token_discriminator::REVOKE => process_revoke(accounts, &[]),
 
         token_discriminator::SET_AUTHORITY => {
             // Data: 1 byte authority_type + optional 32 bytes new_authority
@@ -283,17 +256,11 @@ pub fn process_instruction(
             process_burn(accounts, amount, &[])
         }
 
-        token_discriminator::CLOSE_ACCOUNT => {
-            process_close_account(accounts, &[])
-        }
+        token_discriminator::CLOSE_ACCOUNT => process_close_account(accounts, &[]),
 
-        token_discriminator::FREEZE => {
-            process_freeze_account(accounts, &[])
-        }
+        token_discriminator::FREEZE => process_freeze_account(accounts, &[]),
 
-        token_discriminator::THAW => {
-            process_thaw_account(accounts, &[])
-        }
+        token_discriminator::THAW => process_thaw_account(accounts, &[]),
 
         token_discriminator::TRANSFER_CHECKED => {
             // Data: 8 bytes amount + 1 byte decimals
@@ -335,9 +302,7 @@ pub fn process_instruction(
             process_burn_checked(accounts, amount, decimals, &[])
         }
 
-        token_discriminator::SYNC_NATIVE => {
-            process_sync_native(accounts)
-        }
+        token_discriminator::SYNC_NATIVE => process_sync_native(accounts),
 
         _ => Err(ProgramError::InvalidInstructionData),
     }

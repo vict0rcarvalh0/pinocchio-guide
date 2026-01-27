@@ -3602,13 +3602,8 @@ dependencies = [
  "solana-instructions-sysvar",
  "solana-keccak-hasher",
  "solana-last-restart-slot",
- "solana-loader-v2-interface",
- "solana-loader-v3-interface",
- "solana-loader-v4-interface",
- "solana-message",
  "solana-msg",
  "solana-native-token",
- "solana-nonce",
  "solana-program-entrypoint",
  "solana-program-error",
  "solana-program-memory",
@@ -3682,8 +3677,6 @@ version = "3.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a03ee54e20e5562f347121517c1692489a6a8e04f86aefd5740af5097c33820"
 dependencies = [
- "agave-feature-set",
- "agave-precompiles",
  "base64 0.22.1",
  "bincode",
  "itertools 0.12.1",

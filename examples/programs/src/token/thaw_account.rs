@@ -1,85 +1,56 @@
+//! Instruction to thaw a frozen token account.
+
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    pubkey::Pubkey,
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
     ProgramResult,
 };
-
 use pinocchio_token::instructions::ThawAccount;
-
-// A constant representing the program ID, decoded from a base58 string.
-// const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-
-// Macro to define the program's entry point.
-entrypoint!(process_instruction);
-
-/// Entry point for the program. This function is called when the program is invoked.
-///
-/// ### Parameters:
-/// - `_program_id`: The ID of the program being executed.
-/// - `accounts`: The accounts passed to the program.
-/// - `data`: Additional data passed to the program.
-///
-/// ### Returns:
-/// - `ProgramResult`: Indicates success or failure of the program execution.
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    // Validate that the instruction data is at least 8 bytes long.
-    if data.len() < 8 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    // Delegate processing to the `process_thaw_account` function.
-    process_thaw_account(accounts)
-}
 
 /// Processes the `ThawAccount` instruction.
 ///
-/// This function handles the logic for thawing a frozen token account. It validates the accounts
-/// and signers, constructs the instruction, and invokes it.
+/// # Arguments
 ///
-/// ### Parameters:
-/// - `accounts`: The accounts required for the instruction.
+/// * `accounts` - The accounts required for the instruction.
+/// * `signers` - The signers array needed to authorize the transaction.
 ///
-/// ### Accounts:
-/// 0. `[WRITE]` The token account to be thawed.
-/// 1. `[]` The token mint associated with the account.
-/// 2. `[SIGNER]` The freeze authority for the mint.
+/// # Accounts
 ///
-/// ### Returns:
-/// - `ProgramResult`: Indicates success or failure of the instruction processing.
+/// | Index | Writable | Signer | Description |
+/// |-------|----------|--------|-------------|
+/// | 0     | ✓        | ✗      | The account to thaw. |
+/// | 1     | ✗        | ✗      | The token mint. |
+/// | 2     | ✗        | ✓      | The mint freeze authority. |
+///
+/// # Errors
+///
+/// * [`ProgramError::NotEnoughAccountKeys`] - If fewer than 3 accounts are provided.
+/// * [`ProgramError::InvalidAccountData`] - If `account_to_thaw` is not writable.
+/// * [`ProgramError::MissingRequiredSignature`] - If `freeze_authority` is not a signer.
 pub fn process_thaw_account<'a>(
-    accounts: &'a [AccountInfo],
+    accounts: &'a [AccountView],
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Destructure the accounts array into individual accounts.
-    let [token_account, mint_account, freeze_authority_account] = accounts else {
-        // Return an error if there are not enough accounts provided.
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let account_to_thaw = &accounts[0];
+    let mint_account = &accounts[1];
+    let freeze_authority = &accounts[2];
 
-    // Ensure the token account is writable.
-    if !token_account.is_writable() {
+    if !account_to_thaw.is_writable() {
         return Err(ProgramError::InvalidAccountData);
     }
 
-    // Ensure the freeze authority is a signer.
-    if !freeze_authority_account.is_signer() {
+    if !freeze_authority.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    // Construct the `ThawAccount` instruction.
-    let thaw_account_instruction = ThawAccount {
-        account: token_account,
+    ThawAccount {
+        account: account_to_thaw,
         mint: mint_account,
-        freeze_authority: freeze_authority_account,
-    };
-
-    // Invoke the instruction.
-    thaw_account_instruction.invoke()?;
-
-    Ok(())
+        freeze_authority,
+    }
+    .invoke_signed(signers)
 }

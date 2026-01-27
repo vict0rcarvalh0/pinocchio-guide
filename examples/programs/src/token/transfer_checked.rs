@@ -1,110 +1,65 @@
+//! Instruction to transfer tokens with decimal validation.
+
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    instruction::{Signer, Seed},
-    pubkey::Pubkey,
-    ProgramResult
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_token::instructions::TransferChecked;
-
-// A constant representing the program ID, decoded from a base58 string.
-// const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-
-// Macro to define the program's entry point.
-entrypoint!(process_instruction);
-
-/// Entry point for the program. This function is called when the program is invoked.
-///
-/// ### Parameters:
-/// - `_program_id`: The ID of the program being executed.
-/// - `accounts`: The accounts passed to the program.
-/// - `data`: Additional data passed to the program.
-///
-/// ### Returns:
-/// - `ProgramResult`: Indicates success or failure of the program execution.
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    // Validate the length of the data buffer.
-    if data.len() < 9 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    // Extract the amount, decimals, and bump from the data buffer.
-    let amount = unsafe { *(data.as_ptr().add(0) as *const u64) };
-    let decimals = unsafe { *(data.as_ptr().add(8) as *const u8) };
-    let bump = unsafe { *(data.as_ptr().add(9) as *const [u8; 1]) };
-
-    // Process the TransferChecked instruction.
-    process_transfer_checked(accounts, amount, decimals, bump)
-}
 
 /// Processes the `TransferChecked` instruction.
 ///
-/// This function handles the logic for transferring tokens with a specified amount and decimals.
-/// It validates the accounts and signers, constructs the instruction, and invokes it.
+/// # Arguments
 ///
-/// ### Parameters:
-/// - `accounts`: The accounts required for the instruction.
-/// - `amount`: The amount of tokens to transfer (in microtokens).
-/// - `decimals`: The number of decimal places for the token.
-/// - `bump`: The bump seed for the signer.
+/// * `accounts` - The accounts required for the instruction.
+/// * `amount` - The amount of tokens to transfer.
+/// * `decimals` - The number of decimal places for the token.
+/// * `signers` - The signers array needed to authorize the transaction.
 ///
-/// ### Accounts:
-/// 0. `[WRITE]` The source account.
-/// 1. `[]` The token mint.
-/// 2. `[WRITE]` The destination account.
-/// 3. `[SIGNER]` The source account's owner/delegate.
+/// # Accounts
 ///
-/// ### Returns:
-/// - `ProgramResult`: Indicates success or failure of the instruction processing.
+/// | Index | Writable | Signer | Description |
+/// |-------|----------|--------|-------------|
+/// | 0     | ✓        | ✗      | The source account. |
+/// | 1     | ✗        | ✗      | The token mint. |
+/// | 2     | ✓        | ✗      | The destination account. |
+/// | 3     | ✗        | ✓      | The source account's owner/delegate. |
+///
+/// # Errors
+///
+/// * [`ProgramError::NotEnoughAccountKeys`] - If fewer than 4 accounts are provided.
+/// * [`ProgramError::InvalidAccountData`] - If source or destination are not writable.
+/// * [`ProgramError::MissingRequiredSignature`] - If `authority_account` is not a signer.
 pub fn process_transfer_checked<'a>(
-    accounts: &'a [AccountInfo],
-    amount: u64,        // The amount of tokens to transfer.
-    decimals: u8,       // The number of decimals for the token.
-    bump: [u8; 1],      // The bump seed for the signer.
+    accounts: &'a [AccountView],
+    amount: u64,
+    decimals: u8,
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Destructure the accounts array into individual accounts.
-    let [from_account, mint_account, to_account, authority_account] = accounts else {
-        // Return an error if there are not enough accounts provided.
+    if accounts.len() < 4 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let from_account = &accounts[0];
+    let mint_account = &accounts[1];
+    let to_account = &accounts[2];
+    let authority_account = &accounts[3];
 
-    // Ensure the 'from' account is writable.
-    if !from_account.is_writable() {
+    if !from_account.is_writable() || !to_account.is_writable() {
         return Err(ProgramError::InvalidAccountData);
     }
 
-    // Ensure the 'to' account is writable.
-    if !to_account.is_writable() {
-        return Err(ProgramError::InvalidAccountData);
-    }
-
-    // Ensure the authority account is a signer.
     if !authority_account.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    // Construct the `TransferChecked` instruction.
-    let transfer_checked_instruction = TransferChecked {
+    TransferChecked {
         from: from_account,
         mint: mint_account,
         to: to_account,
         authority: authority_account,
         amount,
         decimals,
-    };
-
-    // Create the signer seeds array.
-    let seeds = [Seed::from(b"authority_account"), Seed::from(&bump)];
-    let signer = [Signer::from(&seeds)];
-
-    // Invoke the instruction with the signer seeds.
-    transfer_checked_instruction.invoke_signed(&signer)?;
-
-    Ok(())
+    }
+    .invoke_signed(signers)
 }
