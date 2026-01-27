@@ -1,7 +1,6 @@
 # Pinocchio Guide
 
 [![Pinocchio](https://img.shields.io/badge/pinocchio-v0.10.1-blue)](https://github.com/anza-xyz/pinocchio)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
 A comprehensive guide and examples for building Solana programs using [Pinocchio](https://github.com/anza-xyz/pinocchio) - a zero-dependency Rust library for efficient on-chain programs.
 
@@ -96,7 +95,3 @@ SBF_OUT_DIR="$(pwd)/target/deploy" cargo test
 ## Contributing
 
 Contributions are welcome! Feel free to submit issues or pull requests to improve the guide, examples, or documentation.
-
-## License
-
-MIT
