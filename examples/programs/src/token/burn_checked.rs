@@ -1,108 +1,62 @@
+//! Instruction to burn tokens with decimal validation.
+
 use pinocchio::{
-    account_info::AccountInfo, 
-    entrypoint, 
-    instruction::{Signer, Seed},
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    ProgramResult
+    AccountView,
+    cpi::Signer,
+    error::ProgramError,
+    ProgramResult,
 };
-
 use pinocchio_token::instructions::BurnChecked;
-
-// A constant representing the program ID, decoded from a base58 string.
-// const ID: [u8; 32] = five8_const::decode_32_const("11111111111111111111111111111111111111111111");
-
-// Macro to define the program's entry point.
-entrypoint!(process_instruction);
-
-/// Entry point for the program. This function is called when the program is invoked.
-///
-/// ### Parameters:
-/// - `_program_id`: The ID of the program being executed.
-/// - `accounts`: The accounts passed to the program.
-/// - `data`: Additional data passed to the program.
-///
-/// ### Returns:
-/// - `ProgramResult`: Indicates success or failure of the program execution.
-pub fn process_instruction(
-    _program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    data: &[u8],
-) -> ProgramResult {
-    // Ensure the data length is sufficient for parsing.
-    if data.len() < 9 {
-        return Err(ProgramError::InvalidInstructionData);
-    }
-
-    // Parse the amount, decimals, and bump from the data buffer.
-    let amount = unsafe { *(data.as_ptr().add(0) as *const u64) };
-    let decimals = unsafe { *(data.as_ptr().add(8) as *const u8) };
-    let bump = unsafe { *(data.as_ptr().add(9) as *const [u8; 1]) };
-
-    // Process the BurnChecked instruction.
-    process_burn_checked(accounts, amount, decimals, bump)
-}
 
 /// Processes the `BurnChecked` instruction.
 ///
-/// This function handles the logic for burning tokens. It validates the accounts
-/// and signers, constructs the instruction, and invokes it.
+/// # Arguments
 ///
-/// ### Parameters:
-/// - `accounts`: The accounts required for the instruction.
-/// - `amount`: The amount of tokens to burn.
-/// - `decimals`: The decimals for the token being burned.
-/// - `bump`: The bump seed for the authority.
+/// * `accounts` - The accounts required for the instruction.
+/// * `amount` - The amount of tokens to burn.
+/// * `decimals` - The number of decimals for the token.
+/// * `signers` - The signers array needed to authorize the transaction.
 ///
-/// ### Accounts:
-/// 0. `[WRITE]` The account to burn from.
-/// 1. `[WRITE]` The token mint.
-/// 2. `[SIGNER]` The account's owner/delegate.
+/// # Accounts
 ///
-/// ### Returns:
-/// - `ProgramResult`: Indicates success or failure of the instruction processing.
+/// | Index | Writable | Signer | Description |
+/// |-------|----------|--------|-------------|
+/// | 0     | ✓        | ✗      | The account to burn from. |
+/// | 1     | ✓        | ✗      | The token mint. |
+/// | 2     | ✗        | ✓      | The account's owner/delegate. |
+///
+/// # Errors
+///
+/// * [`ProgramError::NotEnoughAccountKeys`] - If fewer than 3 accounts are provided.
+/// * [`ProgramError::InvalidAccountData`] - If accounts are not writable.
+/// * [`ProgramError::MissingRequiredSignature`] - If `authority_account` is not a signer.
 pub fn process_burn_checked<'a>(
-    accounts: &'a [AccountInfo],
-    amount: u64,        // Amount of tokens to burn.
-    decimals: u8,       // Number of decimals for the token.
-    bump: [u8; 1],      // The bump seed for the authority.
+    accounts: &'a [AccountView],
+    amount: u64,
+    decimals: u8,
+    signers: &[Signer],
 ) -> ProgramResult {
-    // Destructure the accounts array into individual accounts.
-    let [burn_account, mint_account, authority_account] = accounts else {
-        // Return an error if there are not enough accounts provided.
+    if accounts.len() < 3 {
         return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    }
+    let burn_account = &accounts[0];
+    let mint_account = &accounts[1];
+    let authority_account = &accounts[2];
 
-    // Ensure that the 'burn' account is writable.
-    if !burn_account.is_writable() {
+    if !burn_account.is_writable() || !mint_account.is_writable() {
         return Err(ProgramError::InvalidAccountData);
     }
 
-    // Ensure that the 'mint' account is writable.
-    if !mint_account.is_writable() {
-        return Err(ProgramError::InvalidAccountData);
-    }
-
-    // Ensure that the 'authority' account is a signer.
     if !authority_account.is_signer() {
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    // Construct the `BurnChecked` instruction.
-    let burn_checked_instruction = BurnChecked {
+    BurnChecked {
         account: burn_account,
         mint: mint_account,
         authority: authority_account,
         amount,
         decimals,
-    };
-
-    // Create the seeds and signer for the instruction.
-    let seeds = [Seed::from(b"authority_account"), Seed::from(&bump)];
-    let signer = [Signer::from(&seeds)];
-
-    // Invoke the instruction with the signer.
-    burn_checked_instruction.invoke_signed(&signer)?;
-
-    Ok(())
+    }
+    .invoke_signed(signers)
 }
